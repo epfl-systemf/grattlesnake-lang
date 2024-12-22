@@ -338,7 +338,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         tcCtx.getLocalOnly(name) match {
           case None => None // do not report, an error will be reported checkExpr anyways
           case Some(localInfo) if localInfo.isReassignable =>
-            maybeReportError(s"'$name is not capturable, as it is a var")
+            maybeReportError(s"'$name' is not capturable, as it is a var")
           case Some(localInfo) if idsAreFields =>
             Some(MePath.dot(name))
           case Some(localInfo) =>
@@ -398,6 +398,10 @@ final class TypeChecker(errorReporter: ErrorReporter)
         else optAnnotType.orElse(inferredTypeOpt).getOrElse {
           reportError(s"Please provide a type for uninitialized local $localName", localDef.getPosition)
         }
+      if (isReassignable && actualType.captureDescriptor.isRoot){
+        reportError(s"illegal capture set: var '$localName' has type $actualType, which captures the root",
+          localDef.getPosition)
+      }
       localDef.setVarType(actualType)
       tcCtx.addLocal(localName, actualType, localDef.getPosition, isReassignable,
         declHasTypeAnnot = optTypeAnnotTree.isDefined,
