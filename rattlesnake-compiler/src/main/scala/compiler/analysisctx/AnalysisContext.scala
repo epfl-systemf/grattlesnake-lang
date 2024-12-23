@@ -304,8 +304,8 @@ object AnalysisContext {
               val tcCtx = TypeCheckingContext(
                 analysisContext = builtCtx,
                 environment = RootEnvir,
-                meTypeId = directSupertypeId,
-                meCaptureDescr = directSupertypeSig.getNonSubstitutedCaptureDescr,
+                meTypeId = structId,
+                meCaptureDescr = structSig.getNonSubstitutedCaptureDescr,
                 allowedPackages = builtCtx.packages.keySet,
                 allowedDevices = Device.values.toSet
               )
@@ -313,29 +313,29 @@ object AnalysisContext {
                 structSig.fields.get(fldName) match {
                   case Some(subFieldInfo) =>
                     if (subFieldInfo.isReassignable != superFldInfo.isReassignable) {
-                      reportError(s"$fldName should be reassignable in $structId if and only if it is " +
-                        s"reassignable in its supertype $directSupertypeId", posOpt)
+                      reportError(s"'$fldName' should be reassignable in '$structId' if and only if it is " +
+                        s"reassignable in its supertype '$directSupertypeId'", posOpt)
                     } else if (subFieldInfo.isReassignable && subFieldInfo.tpe != superFldInfo.tpe) {
-                      reportError(s"reassignable field $fldName should have the same type in $structId as in its " +
-                        s"supertype $directSupertypeId", posOpt)
+                      reportError(s"reassignable field '$fldName' should have the same type in '$structId' as in its " +
+                        s"supertype '$directSupertypeId'", posOpt)
                     } else if (
                       !subFieldInfo.isReassignable
                         && !subFieldInfo.tpe.subtypeOf(superFldInfo.tpe)(using tcCtx, OcapEnabled)
                     ) {
-                      reportError(s"type ${subFieldInfo.tpe} of field $fldName does not conform to its type " +
-                        s"${superFldInfo.tpe} in the interface $directSupertypeId", posOpt)
+                      reportError(s"type '${subFieldInfo.tpe}' of field '$fldName' does not conform to its type " +
+                        s"'${superFldInfo.tpe}' in its supertype '$directSupertypeId'", posOpt)
                     }
                   case None =>
-                    reportError(s"$structId cannot subtype $directSupertypeId: missing field $fldName", posOpt)
+                    reportError(s"$structId cannot subtype '$directSupertypeId': missing field '$fldName'", posOpt)
                 }
                 tcCtx.addLocal(fldName, superFldInfo.tpe, None, superFldInfo.isReassignable, true, () => (), () => ())
               }
             } else {
-              reportError(s"struct $directSupertypeId is not an interface", posOpt)
+              reportError(s"struct '$directSupertypeId' is not an interface", posOpt)
             }
           }
           case None =>
-            reportError(s"interface $directSupertypeId is unknown", posOpt)
+            reportError(s"interface '$directSupertypeId' is unknown", posOpt)
         }
       }
     }
