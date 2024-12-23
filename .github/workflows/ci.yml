@@ -15,8 +15,8 @@ jobs:
           distribution: temurin
           java-version: 21
       - name: Compile runtime
-        run: (cd rattlesnake-runtime/ && mvn compile)
+        run: (cd rattlesnake-runtime/ && mvn -B compile)
       - name: Compile agent
-        run: (cd rattlesnake-agent/ && mvn compile)
+        run: (cd rattlesnake-agent/ && mvn -B compile)
       - name: Build and Test
         run: (cd rattlesnake-compiler/ && sbt -v +test)
