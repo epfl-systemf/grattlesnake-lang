@@ -16,5 +16,7 @@ jobs:
           java-version: 21
       - name: Compile runtime
         run: (cd rattlesnake-runtime/ && mvn compile)
+      - name: Compile agent
+        run: (cd rattlesnake-agent/ && mvn compile)
       - name: Build and Test
         run: (cd rattlesnake-compiler/ && sbt -v +test)
