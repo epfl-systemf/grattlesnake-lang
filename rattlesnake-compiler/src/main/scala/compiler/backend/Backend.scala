@@ -51,12 +51,12 @@ final class Backend[V <: ClassVisitor](
 
   private val runtimeTargetDirPath =
     rattlesnakeRootDir
-      .resolve("Rattlesnake-runtime")
+      .resolve("rattlesnake-runtime")
       .resolve("target")
 
   private val agentTargetDirPath =
     rattlesnakeRootDir
-      .resolve("Rattlesnake-agent")
+      .resolve("rattlesnake-agent")
       .resolve("target")
 
   private var lastWrittenLine = -1
