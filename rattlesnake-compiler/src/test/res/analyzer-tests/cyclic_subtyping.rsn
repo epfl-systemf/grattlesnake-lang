@@ -7,7 +7,7 @@ interface C : B {}
 
 interface D : E {}
 
-interface E : A {}
+interface E : A {}  //> E : cyclic subtyping: cycle involves E
 
 interface F {}
 
