@@ -13,6 +13,7 @@ import org.junit.runners.Parameterized.Parameters
 import java.io.File
 import java.nio.file.{Files, Paths}
 import scala.collection.mutable
+import scala.runtime.BooleanRef
 
 /**
  * Expected errors should be specified in formalized comments, starting with `//>`.
@@ -21,6 +22,10 @@ import scala.collection.mutable
  * The error is expected to be reported at the line where the comment specifying it is positioned:
  * {{{ //> E@col=41 : expected 'S', found 'I' }}}
  * The error level code can be postfixed with `@col=` and the column index if you want to assert the column position as well.
+ * By default, the system expected all errors to be specified. It is also possible to ignore unspecified errors
+ * (and thus only assert that the specified ones are reported). To do so, use the following command at the beginning
+ * of the file:
+ * {{{ //> "allow-more-errors" }}}
  */
 object AnalyzerTests {
 
@@ -28,6 +33,7 @@ object AnalyzerTests {
   private val matcherMarker: String = "//>"
   private val matcherSep: String = "<//>"
   private val colMarker: String = "@col="
+  private val ignoreAdditionalErrorsMarker: String = "allow-more-errors"
 
   @Parameters(name = "{0}")
   def allFiles(): java.lang.Iterable[Array[String]] = {
@@ -80,12 +86,14 @@ class AnalyzerTests(fileName: String) {
       else List(testRootPathStr)
     val srcFiles = srcFileNames.map(SourceFile(_))
 
+    // error matcher -> boolean indicating whether a matching error has already been found
     val expectedErrors = mutable.LinkedHashMap.empty[Matcher, Boolean]
+    val ignoreAdditionalErrorsFlag = BooleanRef.create(false)
     for (srcFile <- srcFiles) {
-      val matchers = readErrorsMatchers(srcFile.lines.get, srcFile.name)
-      expectedErrors.addAll(matchers.map(_ -> false))
+      readErrorsSpec(srcFile.lines.get, srcFile.name, expectedErrors, ignoreAdditionalErrorsFlag)
     }
 
+    // error -> boolean indicating whether a matching matcher has been found
     val errors = mutable.LinkedHashMap.empty[CompilationError, Boolean]
 
     val errorsConsumer: ErrorsConsumer = {
@@ -119,7 +127,7 @@ class AnalyzerTests(fileName: String) {
 
     val errorsAreMissing = expectedErrors.exists(!_._2)
     val existsUnexpectedErrors = errors.exists(!_._2)
-    if (errorsAreMissing || existsUnexpectedErrors || fatalErrorOccured) {
+    if (errorsAreMissing || (existsUnexpectedErrors && !ignoreAdditionalErrorsFlag.elem) || fatalErrorOccured) {
       fail(
         if fatalErrorOccured then "A fatal error occured\n\n" else "" +
           "\nExpected errors:\n" +
@@ -139,26 +147,33 @@ class AnalyzerTests(fileName: String) {
     prefix + t
   }
 
-  private def readErrorsMatchers(lines: Seq[String], fileName: String): mutable.Set[Matcher] = {
-    val matchers = mutable.Set.empty[Matcher]
+  private def readErrorsSpec(lines: Seq[String], fileName: String,
+                             matchers: mutable.Map[Matcher, Boolean], ignoreAdditionalErrorsFlag: BooleanRef): Unit = {
     for ((line, zeroBasedLineIdx) <- lines.zipWithIndex) {
       val markerIdx = line.indexOf(matcherMarker)
       val dataIdx = markerIdx + matcherMarker.length
       if (markerIdx != -1 && dataIdx < line.length) {
-        val matchersStrings = line.substring(dataIdx).split(matcherSep)
-        for (matcherStr <- matchersStrings) {
-          val Array(levelAndLineStr, msg) = matcherStr.split(":", 2).map(_.trim)
-          val (levelStr, oneBasedColIdxOpt) = levelAndLineStr.split(colMarker, 2) match {
-            case Array(lv, colStr) =>
-              val colOpt = colStr.toIntOption.orElse(throw AssertionError(s"cannot parse column: $colStr"))
-              (lv, colOpt)
-            case Array(lv) => (lv, None)
+        val data = line.substring(dataIdx)
+        if (data.trim.equals(ignoreAdditionalErrorsMarker)) {
+          ignoreAdditionalErrorsFlag.elem = true
+          assert(zeroBasedLineIdx == 0, s"$ignoreAdditionalErrorsMarker should only be used on the first line of the file")
+        } else {
+          val matchersStrings = data.split(matcherSep)
+          for (matcherStr <- matchersStrings) {
+            val splitMatcherStr = matcherStr.split(":", 2)
+            assert(splitMatcherStr.size == 2, s"unrecognized matcher: $matcherStr")
+            val Array(levelAndLineStr, msg) = splitMatcherStr.map(_.trim)
+            val (levelStr, oneBasedColIdxOpt) = levelAndLineStr.split(colMarker, 2) match {
+              case Array(lv, colStr) =>
+                val colOpt = colStr.toIntOption.orElse(throw AssertionError(s"cannot parse column: $colStr"))
+                (lv, colOpt)
+              case Array(lv) => (lv, None)
+            }
+            matchers.addOne(Matcher(msg, fileName, zeroBasedLineIdx + 1, oneBasedColIdxOpt, parseLevel(levelStr)), false)
           }
-          matchers.addOne(Matcher(msg, fileName, zeroBasedLineIdx + 1, oneBasedColIdxOpt, parseLevel(levelStr)))
         }
       }
     }
-    matchers
   }
 
   private def parseLevel(levelStr: String): Level = levelStr match {
