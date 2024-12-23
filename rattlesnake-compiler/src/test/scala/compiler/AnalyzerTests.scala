@@ -1,330 +1,174 @@
 package compiler
 
-import compiler.pipeline.CompilationStep.ContextCreation
-import compiler.reporting.Errors.*
-import compiler.pipeline.TasksPipelines.frontend
-import compiler.analysisctx.ContextCreator
-import compiler.gennames.FileExtensions
+import compiler.AnalyzerTests.*
 import compiler.io.SourceFile
-import compiler.lowerer.Lowerer
-import compiler.pathschecker.PathsChecker
-import compiler.pipeline.{CompilationStep, MultiStep, TasksPipelines}
-import compiler.typechecker.TypeChecker
+import compiler.pipeline.TasksPipelines
+import compiler.reporting.Errors.*
 import org.junit.Assert.fail
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
+import org.junit.runners.Parameterized.Parameters
 
-import scala.collection.mutable.ListBuffer
+import java.io.File
+import java.nio.file.{Files, Paths}
+import scala.collection.mutable
 
+/**
+ * Expected errors should be specified in formalized comments, starting with `//>`.
+ * The comment should contain a code for the error level (E for error, W for warning), and the expected message, e.g.:
+ * {{{ //> W : unused local: 'x' is never queried }}}
+ * The error is expected to be reported at the line where the comment specifying it is positioned:
+ * {{{ //> E@col=41 : expected 'S', found 'I' }}}
+ * The error level code can be postfixed with `@col=` and the column index if you want to assert the column position as well.
+ */
+object AnalyzerTests {
 
-class AnalyzerTests {
+  private val rootPathStr: String = "./src/test/res/analyzer-tests/"
+  private val matcherMarker: String = "//>"
+  private val matcherSep: String = "<//>"
+  private val colMarker: String = "@col="
 
-  private val srcDir = "src/test/res/analyzer-tests"
-
-  @Test def expectWarningForUnusedLocal(): Unit = {
-    runAndExpectErrors("unused_local") {
-      ErrorMatcher("expect warning for unused local",
-        line = 4, col = 12,
-        msgMatcher = _.contains("unused local: 'x' is never queried"),
-        errorClass = classOf[Warning]
-      )
-    }
+  @Parameters(name = "{0}")
+  def allFiles(): java.lang.Iterable[Array[String]] = {
+    Files.list(Paths.get(rootPathStr)).map(filePath => Array(filePath.getFileName.toString)).toList
   }
 
-  @Test def expectWarningForVarNotReassigned(): Unit = {
-    runAndExpectErrors("var_never_reassigned") {
-      ErrorMatcher("expect warning when variable is never reassigned",
-        line = 6, col = 9,
-        msgMatcher = _.contains("value declared as variable: 'k' could be a val"),
-        errorClass = classOf[Warning]
-      )
-    }
+  private enum Level {
+    case Error, Warning
   }
 
-  @Test def typingErrorsInSortingProgram(): Unit = {
-    runAndExpectErrors("sorting_bad_types", matchersListShouldBeComplete = false)(
-      ErrorMatcher("i2 is String",
-        line = 6, col = 21,
-        msgMatcher = _.contains("expected 'Int', found 'String'"),
-        errorClass = classOf[Err]
-      ),
-      ErrorMatcher("swap expects an array of Double as its first argument",
-        line = 13, col = 21,
-        msgMatcher = _.contains("expected 'mut arr Double', found 'mut arr Int'"),
-        errorClass = classOf[Err]
-      ),
-      ErrorMatcher("type Index is unknown",
-        line = 18, col = 31,
-        msgMatcher = _.contains("unknown type: 'Index'"),
-        errorClass = classOf[Err]
-      ),
-      ErrorMatcher("type Baz is unknown",
-        line = 19, col = 17,
-        msgMatcher = _.contains("not found: structure or module 'Baz'"),
-        errorClass = classOf[Err]
-      ),
-      ErrorMatcher("panic expects String, not Int",
-        line = 21, col = 13,
-        msgMatcher = _.contains("expected 'String', found 'Int'"),
-        errorClass = classOf[Err]
-      ),
-      ErrorMatcher("#array is Int",
-        line = 24, col = 17,
-        msgMatcher = _.contains("expected 'Char', found 'Int'"),
-        errorClass = classOf[Err]
-      ),
-      ErrorMatcher("expect Int, not String",
-        line = 26, col = 21,
-        msgMatcher = _.contains("expected 'Int', found 'String'"),
-        errorClass = classOf[Err]
-      ),
-      ErrorMatcher("Fake is unknown",
-        line = 34, col = 19,
-        msgMatcher = _.contains("unknown type: 'Fake'"),
-        errorClass = classOf[Err]
-      ),
-      ErrorMatcher("no operator Int + String -> Int",
-        line = 35, col = 32,
-        msgMatcher = _.contains("no definition of operator '+' found for operands 'Int' and 'String'"),
-        errorClass = classOf[Err]
-      ),
-      ErrorMatcher("expect array of Int, not array of String",
-        line = 39, col = 23,
-        msgMatcher = _.contains("expected 'mut arr Int', found 'mut arr String'"),
-        errorClass = classOf[Err]
-      )
-    )
-  }
+  private case class Matcher(
+                              msg: String,
+                              fileName: String,
+                              oneBasedLineIdx: Int,
+                              oneBasedColIdxOpt: Option[Int],
+                              level: Level
+                            ) {
 
-  @Test def shouldRejectModifOfConstField(): Unit = {
-    runAndExpectErrors("modif_const_field"){
-      ErrorMatcher("should reject modification of constant field",
-        line = 10, col = 9,
-        msgMatcher = _.contains("cannot update immutable field"),
-        errorClass = classOf[Err]
-      )
-    }
-  }
+    import Level.Warning
 
-  @Test def shouldRejectCyclicSubtyping(): Unit = {
-    runAndExpectErrors("cyclic_subtyping"){
-      ErrorMatcher("should reject cycle in subtyping relation",
-        msgMatcher = _.contains("cyclic subtyping"),
-        errorClass = classOf[Err],
-        compilationStep = ContextCreation
-      )
-    }
-  }
-
-  @Test def shouldRejectUnrelatedEqualities(): Unit = {
-    runAndExpectErrors("subtype_equality_check")(
-      ErrorMatcher("should reject second argument in test1",
-        line = 5, col = 60,
-        msgMatcher = _.contains("expected 'S', found 'I'"),
-        errorClass = classOf[Err]
-      ),
-      ErrorMatcher("should reject first argument in test2",
-        line = 9, col = 41,
-        msgMatcher = _.contains("expected 'S', found 'I'"),
-        errorClass = classOf[Err]
-      ),
-      ErrorMatcher("should reject first argument in test3 (second argument is thus ignored)",
-        line = 13, col = 41,
-        msgMatcher = _.contains("expected 'S', found 'I'"),
-        errorClass = classOf[Err]
-      )
-    )
-  }
-
-  @Test def explicitCastTest(): Unit = {
-    runAndExpectErrors("explicit_cast")(
-      ErrorMatcher("should reject unrelated cast to String",
-        line = 26, col = 17,
-        msgMatcher = _.contains("cannot cast 'Sub' to 'String'"),
-        errorClass = classOf[Err]
-      ),
-      ErrorMatcher("should warn on cast to supertype",
-        line = 28, col = 17,
-        msgMatcher = _.contains("useless conversion: 'Sub' --> 'Super'"),
-        errorClass = classOf[Warning]
-      ),
-      ErrorMatcher("should reject unrelated cast of struct to struct",
-        line = 32, col = 17,
-        msgMatcher = _.contains("cannot cast 'Sub' to 'Indep'"),
-        errorClass = classOf[Err]
-      ),
-      ErrorMatcher("should reject unrelated cast of interface to struct",
-        line = 33, col = 17,
-        msgMatcher = _.contains("cannot cast 'Super' to 'Indep'"),
-        errorClass = classOf[Err]
-      ),
-      ErrorMatcher("should reject unrelated cast of struct to interface",
-        line = 35, col = 17,
-        msgMatcher = _.contains("cannot cast 'Sub' to 'I'"),
-        errorClass = classOf[Err]
-      ),
-      ErrorMatcher("should reject unrelated cast of interface to interface",
-        line = 36, col = 17,
-        msgMatcher = _.contains("cannot cast 'Super' to 'I'"),
-        errorClass = classOf[Err]
-      )
-    )
-  }
-
-  @Test def complexHierarchyTest(): Unit = {
-    runAndExpectErrors("complex_hierarchy")(
-      ErrorMatcher("should reject non-var field overriding var field (1)",
-        line = 6, col = 1,
-        msgMatcher = _.contains("subtyping error: value needs to be reassignable in subtypes of Tree"),
-        errorClass = classOf[Err],
-        compilationStep = ContextCreation
-      ),
-      ErrorMatcher("should reject field override with unrelated types",
-        line = 55, col = 1,
-        msgMatcher = _.contains("subtyping error: type of msg in MessageableImplWrong should be a subtype of its type in Messageable2"),
-        errorClass = classOf[Err],
-        compilationStep = ContextCreation
-      ),
-      ErrorMatcher("should reject non-var field overriding var field (2)",
-        line = 67, col = 1,
-        msgMatcher = _.contains("subtyping error: value needs to be reassignable in subtypes of CellWithMemoLastAndInit"),
-        errorClass = classOf[Err],
-        compilationStep = ContextCreation
-      ),
-      ErrorMatcher("should reject covariant var field with covariant types",
-        line = 84, col = 1,
-        msgMatcher = _.contains("subtyping error: type of tree is not the same in TreeContainerImpl and TreeContainer"),
-        errorClass = classOf[Err],
-        compilationStep = ContextCreation
-      ),
-      ErrorMatcher("should reject subtyping with missing field",
-        line = 84, col = 1,
-        msgMatcher = _.contains("missing field versionId"),
-        errorClass = classOf[Err],
-        compilationStep = ContextCreation
-      )
-    )
-  }
-  
-  @Test def smartcastAnd(): Unit = {
-    runAndExpectErrors("smartcast_and")(
-      ErrorMatcher("access to possibly missing field should be rejected",
-        line = 7, col = 13,
-        msgMatcher = _.contains("'Option' has no field named 'value'"),
-        errorClass = classOf[Err]
-      ),
-      ErrorMatcher("access to value on value smartcasted to None should be rejected",
-        line = 8, col = 28,
-        msgMatcher = _.contains("'None' has no field named 'value'"),
-        errorClass = classOf[Err]
-      )
-    )
-  }
-
-  private final case class ErrorMatcher(
-                                         descr: String,
-                                         private val line: Int = -1,
-                                         private val col: Int = -1,
-                                         private val msgMatcher: String => Boolean = null,
-                                         compilationStep: CompilationStep = CompilationStep.TypeChecking,
-                                         errorClass: Class[? <: CompilationError]
-                                       ) {
-
-    private def _line: Option[Int] = Some(line).filter(_ >= 0)
-
-    private def _col: Option[Int] = Some(col).filter(_ >= 0)
-
-    private def _msgMatcher: Option[String => Boolean] = Some(msgMatcher).filter(_ != null)
-
-    private def _compilationStep: Option[CompilationStep] = Some(compilationStep).filter(_ != null)
-
-    require(_line.isDefined || _col.isDefined || _msgMatcher.isDefined, "no criterion defined apart from compilation step")
-
-    def doesMatch(err: CompilationError): Boolean = {
-      _line.forall { l => err.posOpt.exists(_.line == l) }
-        && _col.forall { c => err.posOpt.exists(_.col == c) }
-        && _msgMatcher.forall { matcher => matcher(err.msg) }
-        && _compilationStep.forall(_ == err.compilationStep)
-        && err.getClass == errorClass
+    def matches(err: CompilationError): Boolean = {
+      err.msg.trim == msg.trim
+        && err.posOpt.exists(_.srcCodeProviderName == fileName)
+        && err.posOpt.exists(_.line == oneBasedLineIdx)
+        && oneBasedColIdxOpt.forall(oneBasedColIdx => err.posOpt.exists(_.col == oneBasedColIdx))
+        && (err.isWarning == (level == Warning))
     }
 
-    def details: String = s"$descr ($line:$col)"
+    override def toString: String = {
+      val levelDescr = level.toString.toLowerCase
+      val colDescr = oneBasedColIdxOpt.map(":" + _).getOrElse("")
+      s"[$levelDescr] $fileName:$oneBasedLineIdx$colDescr : $msg"
+    }
 
   }
 
-  private def warningMatcher(line: Int, keywords: String*): ErrorMatcher = ErrorMatcher(
-    "warning matcher with keyword(s) " ++ keywords.map("'" + _ + "'").mkString(", "),
-    line = line, errorClass = classOf[Warning], msgMatcher = msg => keywords.forall(msg.contains(_)),
-    compilationStep = null
-  )
+}
 
-  private def runAndExpectErrors(srcFileName: String, matchersListShouldBeComplete: Boolean = true)(errorsMatchers: ErrorMatcher*): Unit = {
+@RunWith(classOf[Parameterized])
+class AnalyzerTests(fileName: String) {
 
-    val allEncounteredErrors = ListBuffer.empty[CompilationError]
-    val unmatchedErrors = ListBuffer.empty[CompilationError]
-    val remainingErrorMatchers = ListBuffer.from(errorsMatchers)
+  @Test
+  def checkFileTest(): Unit = {
+
+    val testRootPathStr = rootPathStr + fileName
+    val testRootFile = new File(testRootPathStr)
+    val srcFileNames =
+      if testRootFile.isDirectory
+      then testRootFile.list().toList
+      else List(testRootPathStr)
+    val srcFiles = srcFileNames.map(SourceFile(_))
+
+    val expectedErrors = mutable.LinkedHashMap.empty[Matcher, Boolean]
+    for (srcFile <- srcFiles) {
+      val matchers = readErrorsMatchers(srcFile.lines.get, srcFile.name)
+      expectedErrors.addAll(matchers.map(_ -> false))
+    }
+
+    val errors = mutable.LinkedHashMap.empty[CompilationError, Boolean]
 
     val errorsConsumer: ErrorsConsumer = {
-      case _: String => ()
       case err: CompilationError =>
-        allEncounteredErrors.addOne(err)
-        remainingErrorMatchers.zipWithIndex
-          .find { (matcher, _) => matcher.doesMatch(err) }
-          .orElse {
-            unmatchedErrors.addOne(err)
-            None
-          }.foreach { (_, idx) =>
-            remainingErrorMatchers.remove(idx)
+        expectedErrors.find((matcher, alrMatched) => !alrMatched && matcher.matches(err))
+          .map { (matcher, _) =>
+            expectedErrors(matcher) = true
+            errors.put(err, true)
+          }.getOrElse {
+            errors.put(err, false)
           }
+      case _: String => ()
     }
 
-    final case class ExitException(exitCode: ExitCode) extends Exception
+    case object ExitException extends Exception
 
-    val er = new ErrorReporter(errorsConsumer, exit = code => throw ExitException(code))
-    val pipeline =
-      MultiStep(frontend(er))
-        .andThen(new ContextCreator(er))
-        .andThen(new TypeChecker(er))
-        .andThen(new PathsChecker(er))
-        .andThen(new Lowerer())
-    val testFile = SourceFile(s"$srcDir/$srcFileName.${FileExtensions.rattlesnake}")
+    var fatalErrorOccured = false
+
+    def exitCalled(exitCode: ExitCode): Nothing = {
+      fatalErrorOccured |= exitCode == fatalErrorExitCode
+      throw ExitException
+    }
+
+    val er = ErrorReporter(errorsConsumer, exitCalled)
+    val pipeline = TasksPipelines.typeChecker(er, okReporter = _ => ())
     try {
-      pipeline.apply(List(testFile))
-    } catch case ExitException(code) => ()
+      pipeline.apply(srcFiles)
+    } catch {
+      case ExitException => ()
+    }
 
-    if (remainingErrorMatchers.nonEmpty) {
-      val msg =
-        "No error found that matches the following matchers:\n"
-          ++ remainingErrorMatchers.map(_.details).mkString("\n")
-          ++ "\n\nThe following errors were reported by typechecking:\n"
-          ++ allEncounteredErrors.mkString("\n") ++ "\n"
-      fail(msg)
-    } else if (matchersListShouldBeComplete && unmatchedErrors.nonEmpty){
-      val msg =
-        "Errors have been found for all matchers, but there were additional one(s):\n"
-          ++ unmatchedErrors.mkString("\n")
-      fail(msg)
+    val errorsAreMissing = expectedErrors.exists(!_._2)
+    val existsUnexpectedErrors = errors.exists(!_._2)
+    if (errorsAreMissing || existsUnexpectedErrors || fatalErrorOccured) {
+      fail(
+        if fatalErrorOccured then "A fatal error occured\n\n" else "" +
+          "\nExpected errors:\n" +
+          expectedErrors.map(markOkOrNot).mkString("\n") +
+          "\n\nActual errors:\n" +
+          errors.map(markOkOrNot).mkString("\n")
+      )
     }
   }
 
-  private def runAndExpectCorrect(srcFileName: String, failOnWarning: Boolean): Unit = {
-    val warnings = ListBuffer.empty[Warning]
-    val errorsConsumer: ErrorsConsumer = {
-      case w: Warning => warnings.addOne(w)
-      case _ => ()
-    }
-    var er: ErrorReporter = null
-    er = new ErrorReporter(errorsConsumer, exit = failExit(er))
-    val tc = TasksPipelines.typeChecker(er, okReporter = _ => ())
-    val testFile = SourceFile(s"$srcDir/$srcFileName.${FileExtensions.rattlesnake}")
-    tc.apply(List(testFile))
-    if (warnings.nonEmpty && failOnWarning){
-      fail("Warnings found:\n" ++ warnings.mkString("\n"))
-    }
+  private def markOkOrNot[T](tAndOkFlag: (T, Boolean)): String = {
+    val (t, okFlag) = tAndOkFlag
+    val prefix =
+      if okFlag
+      then (colorGreen + " ✔ " + colorReset)
+      else (colorRed + " ✘ " + colorReset)
+    prefix + t
   }
 
-  private def failExit(errorReporter: ErrorReporter)(exitCode: ExitCode): Nothing = {
-    fail(s"exit called, exit code: $exitCode\nErrors found:\n" ++ errorReporter.getErrors.mkString("\n"))
-    throw new AssertionError("cannot happen")
+  private def readErrorsMatchers(lines: Seq[String], fileName: String): mutable.Set[Matcher] = {
+    val matchers = mutable.Set.empty[Matcher]
+    for ((line, zeroBasedLineIdx) <- lines.zipWithIndex) {
+      val markerIdx = line.indexOf(matcherMarker)
+      val dataIdx = markerIdx + matcherMarker.length
+      if (markerIdx != -1 && dataIdx < line.length) {
+        val matchersStrings = line.substring(dataIdx).split(matcherSep)
+        for (matcherStr <- matchersStrings) {
+          val Array(levelAndLineStr, msg) = matcherStr.split(":", 2).map(_.trim)
+          val (levelStr, oneBasedColIdxOpt) = levelAndLineStr.split(colMarker, 2) match {
+            case Array(lv, colStr) =>
+              val colOpt = colStr.toIntOption.orElse(throw AssertionError(s"cannot parse column: $colStr"))
+              (lv, colOpt)
+            case Array(lv) => (lv, None)
+          }
+          matchers.addOne(Matcher(msg, fileName, zeroBasedLineIdx + 1, oneBasedColIdxOpt, parseLevel(levelStr)))
+        }
+      }
+    }
+    matchers
   }
+
+  private def parseLevel(levelStr: String): Level = levelStr match {
+    case "E" => Level.Error
+    case "W" => Level.Warning
+    case _ => throw AssertionError(s"unexpected level code: $levelStr")
+  }
+
+  private val colorRed = "\u001B[31m"
+  private val colorGreen = "\u001B[32m"
+  private val colorReset = "\u001B[0m"
 
 }

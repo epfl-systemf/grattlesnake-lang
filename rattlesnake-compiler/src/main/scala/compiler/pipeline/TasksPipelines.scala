@@ -61,7 +61,8 @@ object TasksPipelines {
   /**
    * Pipeline for typechecker (src file -> side effects of error reporting)
    */
-  def typeChecker(er: ErrorReporter = defaultErrorReporter, okReporter: String => Unit = println): CompilerStep[List[SourceCodeProvider], Unit] = {
+  def typeChecker(er: ErrorReporter = defaultErrorReporter,
+                  okReporter: String => Unit = println): CompilerStep[List[SourceCodeProvider], Unit] = {
     MultiStep(frontend(er))
       .andThen(new ContextCreator(er))
       .andThen(new TypeChecker(er))

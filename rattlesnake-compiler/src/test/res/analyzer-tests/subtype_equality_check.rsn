@@ -2,15 +2,15 @@
 package Test {
 
     fn test1() -> Bool {
-        return Comparator.compareSupSub(Creator.createS(), Creator.createI());  // wrong on second argument
+        return Comparator.compareSupSub(Creator.createS(), Creator.createI());  //> E@col=60 : expected 'S', found 'I'
     }
 
     fn test2() -> Bool {
-        return Comparator.compareSubSup(Creator.createI(), Creator.createI());  // wrong on first argument
+        return Comparator.compareSubSup(Creator.createI(), Creator.createI());  //> E@col=41 : expected 'S', found 'I'
     }
 
     fn test3() -> Bool {
-        return Comparator.compareSubSub(Creator.createI(), Creator.createI());  // wrong on both arguments
+        return Comparator.compareSubSub(Creator.createI(), Creator.createI());  //> E@col=41 : expected 'S', found 'I'
     }
 
 }
