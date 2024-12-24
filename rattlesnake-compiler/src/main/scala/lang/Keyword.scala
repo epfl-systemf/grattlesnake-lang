@@ -26,7 +26,6 @@ enum Keyword(val str: String) {
   case Restricted extends Keyword("restricted")
   case Return extends Keyword("return")
   case Struct extends Keyword("struct")
-  case Test extends Keyword("test")
   case Then extends Keyword("then")
   case Val extends Keyword("val")
   case Var extends Keyword("var")
