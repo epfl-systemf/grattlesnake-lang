@@ -5,14 +5,14 @@ import compiler.gennames.ClassesAndDirectoriesNames.agentSubdirName
 import java.io.File
 import java.nio.file.Path
 
-final class Runner(errorCallback: String => Nothing) {
+final class Runner(errorCallback: String => Nothing, workingDirectoryPath: Path) {
 
   private val classPathsSep =
     if System.getProperty("os.name").startsWith("Windows")
     then ";"
     else ":"
 
-  def runMain(workingDirectoryPath: Path, mainClassName: String): Int = {
+  def runMain(mainClassName: String, inheritIO: Boolean): Process = {
     val agentSubdirPath = workingDirectoryPath.resolve(agentSubdirName)
     val agentJarName = findNameOfJarInDir(agentSubdirPath.toFile, "Rattlesnake-agent",
       "Rattlesnake agent not found")
@@ -20,16 +20,18 @@ final class Runner(errorCallback: String => Nothing) {
       "Rattlesnake runtime not found")
     val agentJarFullPath = agentSubdirPath.resolve(agentJarName).toFile.getCanonicalFile
     val runtimeJarFullPath = workingDirectoryPath.resolve(runtimeJarName).toFile.getCanonicalFile
-    new ProcessBuilder()
+    val processBuilder = new ProcessBuilder()
       .directory(workingDirectoryPath.toFile)
-      .inheritIO()
       .command(
         "java",
         "-cp", s"\"$runtimeJarFullPath$classPathsSep.\"",
         s"-javaagent:$agentJarFullPath",
         mainClassName
-      ).start()
-      .waitFor()
+      )
+    if (inheritIO) {
+      processBuilder.inheritIO()
+    }
+    processBuilder.start()
   }
 
   private def findNameOfJarInDir(dir: File, jarNamePrefix: String, errorMsg: String): String = {

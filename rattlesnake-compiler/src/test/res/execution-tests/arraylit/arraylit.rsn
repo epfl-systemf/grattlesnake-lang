@@ -10,4 +10,14 @@ package Test {
         return y * y
     }
 
+    fn printArray(xs: arr Double){
+        for var i = 0; i < #xs; i += 1 {
+            print(doubleToString(xs[i]) + " ");
+        }
+    }
+
+    main fn test(arr String){
+        printArray(createArray());
+    }
+
 }

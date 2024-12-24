@@ -4,6 +4,7 @@ import compiler.gennames.ClassesAndDirectoriesNames.*
 import compiler.gennames.{ClassesAndDirectoriesNames, FileExtensions}
 import compiler.io.{SourceCodeProvider, SourceFile}
 import compiler.pipeline.TasksPipelines
+import compiler.runners.MainFinder.findMainClassNameAmong
 import org.objectweb.asm.Opcodes.{V11, V17, V1_8}
 
 import java.io.File
@@ -183,37 +184,17 @@ object Main {
       val programArgs = getProgramArgsArg(argsMap)
       reportUnknownArgsIfAny(argsMap)
       val writtenFilesPaths = compiler.apply(sources)
-      val classes = getClasses(writtenFilesPaths)
-      val mainClassName = findMainClassName(classes)
+      val mainClassName =
+        findMainClassNameAmong(writtenFilesPaths)
+          .fold(e => error(e.getMessage), identity)
       val outDirPath = outDirBasePath.resolve(outDirName)
-      val exitCode = new Runner(error).runMain(outDirPath, mainClassName)
+      val process = new Runner(error, outDirPath).runMain(mainClassName, inheritIO = true)
+      val exitCode = process.waitFor()
       if (exitCode != 0) {
         System.err.println(s"Process terminated with error code $exitCode")
       }
     }
   }
-
-  private def findMainClassName(classes: List[Class[?]]): String = {
-    val mainMethods = mutable.ListBuffer.empty[Method]
-    for
-      clazz <- classes
-      if clazz.getDeclaredFields.exists(_.getName == packageInstanceName)
-      mth <- clazz.getDeclaredMethods
-      if isMainMethod(mth)
-    do mainMethods.addOne(mth)
-    if (mainMethods.isEmpty) {
-      error("no main method found")
-    } else if (mainMethods.size > 1) {
-      error("more than one main methods found")
-    } else mainMethods.head.getDeclaringClass.getName
-  }
-
-  private def isMainMethod(mth: Method): Boolean =
-    Modifier.isPublic(mth.getModifiers)
-      && Modifier.isStatic(mth.getModifiers)
-      && mth.getReturnType == Void.TYPE
-      && mth.getName == "main"
-      && mth.getParameterTypes.sameElements(Array(classOf[Array[String]]))
 
   /**
    * Compile command
@@ -355,24 +336,6 @@ object Main {
   extension (str: String) private def withHeadUppercase: String = {
     if str.isEmpty then str
     else str.head.toUpper +: str.tail
-  }
-
-  /** Class loader to load generated .class files when executing the `run` command */
-  private object Loader extends ClassLoader(Thread.currentThread().getContextClassLoader) {
-    def load(name: String, bytes: Array[Byte]): Class[?] = {
-      super.defineClass(name, bytes, 0, bytes.length)
-    }
-  }
-
-  private def getClasses(writtenFilesPaths: List[Path]) = {
-    val classes = {
-      for path <- writtenFilesPaths yield {
-        val bytes = Files.readAllBytes(path)
-        val className = path.getFileName.toString.takeWhile(_ != '.')
-        Loader.load(className, bytes)
-      }
-    }
-    classes
   }
 
   @tailrec private def yesNoQuestion(prompt: String): Boolean = {
