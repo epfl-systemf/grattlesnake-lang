@@ -30,11 +30,12 @@ object MainFinder {
   }
 
   private def getClasses(writtenFilesPaths: List[Path]): List[Class[?]] = {
+    val loader = new Loader
     val classes = {
       for path <- writtenFilesPaths yield {
         val bytes = Files.readAllBytes(path)
         val className = path.getFileName.toString.takeWhile(_ != '.')
-        Loader.load(className, bytes)
+        loader.load(className, bytes)
       }
     }
     classes
@@ -48,7 +49,7 @@ object MainFinder {
       && mth.getParameterTypes.sameElements(Array(classOf[Array[String]]))
 
   /** Class loader to load generated .class files when executing the `run` command */
-  private object Loader extends ClassLoader(Thread.currentThread().getContextClassLoader) {
+  private class Loader extends ClassLoader(Thread.currentThread().getContextClassLoader) {
     def load(name: String, bytes: Array[Byte]): Class[?] = {
       super.defineClass(name, bytes, 0, bytes.length)
     }

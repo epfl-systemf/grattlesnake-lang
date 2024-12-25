@@ -43,7 +43,6 @@ class ExecutionTests(programDirName: String) {
 
     val programDirPath = Path.of(rootPathStr).resolve(programDirName)
     val expOut = getExpectedData(programDirPath.resolve(stdoutFileName))
-    val expErr = getExpectedData(programDirPath.resolve(stderrFileName))
 
     object ExitException extends RuntimeException
 
@@ -67,18 +66,20 @@ class ExecutionTests(programDirName: String) {
     val actOut = readProgramStream(process.getInputStream)
     val actErr = readProgramStream(process.getErrorStream)
 
-    assertEquals(s"unexpected output on stdout (exit code: $exitCode, stderr: $actErr)", expOut, actOut)
+    assertEquals(s"unexpected output on stdout (exit code: $exitCode, stderr:\n$actErr\n)", expOut, actOut)
     assertEquals(s"non-zero exit code, stderr: $actErr", 0, exitCode)
   }
 
   private def readProgramStream(is: InputStream): String = {
-    Source.fromInputStream(is).mkString
+    Source.fromInputStream(is)
+      .mkString
+      .lines()
+      .toArray(new Array[String](_))
+      .mkString("\n")
   }
 
   private def getExpectedData(path: Path): String = {
-    if path.toFile.exists()
-    then Files.readAllLines(path).toArray.mkString("\n")
-    else ""
+    Files.readAllLines(path).toArray.mkString("\n")
   }
 
   private def getAllSourcesInProgram(dirPath: Path): List[String] = {
