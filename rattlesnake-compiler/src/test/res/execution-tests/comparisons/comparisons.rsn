@@ -1,7 +1,7 @@
 
 package Test {
 
-    fn testFunc(x: Int) -> Int {
+    fn f(x: Int) -> Int {
         if x < 0 {
             if x >= -5 {
                 return -12;
@@ -22,6 +22,12 @@ package Test {
             } else {
                 return 1005;
             }
+        }
+    }
+
+    main fn test(arr String){
+        for var i = -100; i < 120; i += 1 {
+            print(intToString(f(i)) + "\n");
         }
     }
 
