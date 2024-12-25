@@ -24,7 +24,7 @@ final class Runner(errorCallback: String => Nothing, workingDirectoryPath: Path)
       .directory(workingDirectoryPath.toFile)
       .command(
         "java",
-        "-cp", s"\"$runtimeJarFullPath$classPathsSep.\"",
+        "-cp", s"$runtimeJarFullPath$classPathsSep.",
         s"-javaagent:$agentJarFullPath",
         mainClassName
       )
