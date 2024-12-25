@@ -65,9 +65,10 @@ class ExecutionTests(programDirName: String) {
 
     val exitCode = process.waitFor()
     val actOut = readProgramStream(process.getInputStream)
+    val actErr = readProgramStream(process.getErrorStream)
 
-    assertEquals("unexpected output on stdout", expOut, actOut)
-    assertEquals("non-zero exit code", 0, exitCode)
+    assertEquals(s"unexpected output on stdout (exit code: $exitCode, stderr: $actErr)", expOut, actOut)
+    assertEquals(s"non-zero exit code, stderr: $actErr", 0, exitCode)
   }
 
   private def readProgramStream(is: InputStream): String = {
