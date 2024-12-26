@@ -1,0 +1,17 @@
+
+const bonjour = "Bonjour"
+
+package Test {
+
+    main fn testFunc(arr String) {
+        printI(#"Hello");
+        printI(#bonjour);
+        printI(#[10, 15, 50]);
+        printI(#(arr@newregion Double [8]));
+    }
+
+    fn printI(i: Int){
+        print(intToString(i) + "\n");
+    }
+
+}

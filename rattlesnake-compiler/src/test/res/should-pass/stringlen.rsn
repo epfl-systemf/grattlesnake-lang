@@ -1,8 +1,0 @@
-
-package Test {
-
-    fn testFunc(str: String) -> Int {
-        return #str
-    }
-
-}
