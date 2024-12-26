@@ -1,0 +1,56 @@
+
+package Arrays {
+
+    // returns the index of the minimal element of the array
+    fn minIdx(array: arr^ Int, firstIdx: Int) -> Int {
+        if #array == 0 {
+            panic "min of empty array"
+        } else {
+            var minIdx = firstIdx;
+            for val len = #array, var i = firstIdx + 1; i < len; i += 1 {
+                if array[i] < array[minIdx] {
+                    minIdx = i;
+                }
+            };
+            return minIdx
+        }
+    }
+
+}
+
+module Sorting(package Arrays) {
+
+    fn swap(array: mut arr^ Int, i1: Int, i2: Int) -> Void {
+        val tmp = array[i1];
+        array[i1] = array[i2];
+        array[i2] = tmp;
+    }
+
+    fn selectionSort(array: mut arr^ Int) {
+        for var i = 0; i < #array; i += 1 {
+            val minIdx = Arrays.minIdx(array, i);
+            swap(array, i, minIdx)
+        };
+    }
+
+}
+
+package Main {
+
+    main fn selectionSort(arr String) {
+        val array = [12, 25, -11, 47, 21, 9, 37, 64, 78, 95, 87, 32, 40, 31, 90]@newregion;
+        val s = new Sorting();
+        s.selectionSort(array);
+        printArray(array);
+    }
+
+    fn printArray(a: arr^ Int){
+        for var i = 0; i < #a; i += 1 {
+            print(intToString(a[i]));
+            if i < #a-1 {
+                print(" ")
+            }
+        }
+    }
+
+}
