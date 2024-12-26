@@ -1,0 +1,58 @@
+
+struct Vertex {
+    x: Double,
+    y: Double
+}
+
+package Geometry {
+    
+    fn computeArea(rectangle: Rectangle^) -> Double {
+        return rectangle.width * rectangle.height
+    }
+    
+}
+
+package Test {
+
+    // creates the rectangles described by rectanglesData (leftUpperX, leftUpperY, width, height) and returns them
+    // fills 'areas' with their areas
+    fn createRectangles(rectanglesData: arr^ Double) -> arr^ Rectangle {
+        if #rectanglesData % 4 != 0 {
+            panic "length of rectanglesData should be a multiple of 4"
+        };
+        val r = newregion;
+        val rectangles = arr@r Rectangle[#rectanglesData / 4];
+        var i = 0;
+        for ; i < #rectanglesData; i += 4 {
+            rectangles[i / 4] = new Rectangle(new Vertex(rectanglesData[i], rectanglesData[i + 1]), rectanglesData[i + 2], rectanglesData[i + 3])
+        };
+        return rectangles
+    }
+
+    main fn test(arr String){
+        val rectangles = createRectangles([
+            1.2, 4.7, 9.3, 7.0,
+            7.5, 14.1, 7.9, 6.9,
+            9.3, 5.6, 7.1, 11.8
+        ]);
+        for var i = 0; i < #rectangles; i += 1 {
+            val rectangle = rectangles[i];
+            val area = Geometry.computeArea(rectangle);
+            printD(area);
+            printD(rectangle.upperLeftCorner.x);
+            printD(rectangle.upperLeftCorner.y);
+            print("---\n");
+        }
+    }
+
+    fn printD(x: Double){
+        print(doubleToString(x) + "\n");
+    }
+
+}
+
+struct Rectangle {
+    upperLeftCorner: Vertex,
+    width: Double,
+    height: Double
+}
