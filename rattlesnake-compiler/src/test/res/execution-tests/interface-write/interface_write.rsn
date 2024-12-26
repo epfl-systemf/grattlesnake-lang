@@ -18,13 +18,13 @@ package Test {
         z.x *= factor;
     }
     
-    fn testF() -> Int {
+    main fn testF(arr String) -> Void {
         val s = newregion;
         val a = new@s A(25, 12.5);
         var t = a.x;
         me.mulX(s, a, 32);
         t -= a.x;
-        return t;
+        print(intToString(t));
     }
 
 }
