@@ -1,3 +1,4 @@
+#nocap;
 
 struct Cell {
   content: Int
@@ -5,10 +6,10 @@ struct Cell {
 
 package Test {
 
-    fn testF() -> arr arr Cell {
+    main fn testF(arr String) {
       val a = arr arr Cell[1];
       a[0] = [new Cell(42)];
-      return a;
+      print(intToString(a[0][0].content));
     }
 
 }
