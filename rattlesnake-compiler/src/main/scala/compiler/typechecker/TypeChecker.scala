@@ -699,8 +699,6 @@ final class TypeChecker(errorReporter: ErrorReporter)
         ternary.setSmartCasts(smartCasts)
         val thenType = checkExpr(thenBr)(using tcCtx.copyWithSmartCasts(smartCasts))
         val elseType = checkExpr(elseBr)
-        val thenIsSupertype = elseType.subtypeOf(thenType)
-        val thenIsSubtype = thenType.subtypeOf(elseType)
         computeJoinOf(Set(thenType, elseType), tcCtx) match {
           case Some(ternaryType) =>
             ternaryType
@@ -1064,8 +1062,15 @@ final class TypeChecker(errorReporter: ErrorReporter)
       reportError(fullprefix ++ s"expected '$expected', found '$actual'", posOpt)
     }
   }
-
+  
   private def computeJoinOf(types: Set[Type], ctx: TypeCheckingContext)(using LanguageMode): Option[Type] = {
+    computeJoinOfShapes(types.map(_.shape), ctx).map { joinShape =>
+      val cd = CaptureDescriptors.unionOf(types.map(_.captureDescriptor))
+      joinShape ^ cd
+    }
+  }
+
+  private def computeJoinOfShapes(types: Set[TypeShape], ctx: TypeCheckingContext)(using LanguageMode): Option[TypeShape] = {
     require(types.nonEmpty)
     if types.size == 1 then Some(types.head)
     else if (areAllStructs(types, ctx)) {
@@ -1081,8 +1086,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
           val superT = commonDirectSupertypes.head
           NamedTypeShape(superT)
         } else {
-          val cd = CaptureDescriptors.unionOf(types.map(_.captureDescriptor))
-          UnionTypeShape(types.map(_.shape)) ^ cd
+          UnionTypeShape(types.map(_.shape))
         }
       )
     } else {
@@ -1094,7 +1098,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
     }
   }
 
-  private def areAllStructs(types: Set[Type], ctx: TypeCheckingContext): Boolean = {
+  private def areAllStructs(types: Set[TypeShape], ctx: TypeCheckingContext): Boolean = {
     types.forall {
       case NamedTypeShape(typeName) => ctx.resolveType(typeName).exists(_.isInstanceOf[StructSignature])
       case _ => false
