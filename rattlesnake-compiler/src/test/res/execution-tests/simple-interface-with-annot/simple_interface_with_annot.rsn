@@ -17,13 +17,22 @@ struct S2 : I {
 
 package Test {
 
-    fn testF(a: arr Bool) -> Int {
-        val x: I = when a[0] then new S1(15, -8, "Hello") else new S2("Bonjour", 955);
+    fn testF(a: Bool) -> Int {
+        val x: I = when a then new S1(15, -8, "Hello") else new S2("Bonjour", 955);
         return f(x.foo, #x.bar);
     }
     
     fn f(i: Int, j: Int) -> Int {
         return 9*i - j*j;
+    }
+
+    main fn test(arr String){
+        printI(testF(true));
+        printI(testF(false));
+    }
+
+    fn printI(i: Int){
+        print(intToString(i) + "\n");
     }
 
 }
