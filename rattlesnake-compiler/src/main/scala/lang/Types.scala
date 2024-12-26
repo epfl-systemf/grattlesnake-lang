@@ -13,17 +13,25 @@ object Types {
     def captureDescriptor: CaptureDescriptor
   }
 
-  final case class CapturingType(shape: TypeShape, captureDescriptor: CaptureDescriptor) extends Type {
+  final case class CapturingType private[CapturingType](shape: TypeShape, captureDescriptor: CaptureDescriptor) extends Type {
+    require(!captureDescriptor.isEmpty)
+    
     override def toString: String =
       if captureDescriptor.isEmpty then shape.toString
       else if captureDescriptor.isRoot then shape.toStringCapturing("")
       else shape.toStringCapturing(captureDescriptor.toString)
   }
+  
+  object CapturingType {
+    def apply(shape: Types.TypeShape, descriptor: CaptureDescriptor): Type = {
+      if descriptor.isEmpty then shape else new CapturingType(shape, descriptor)
+    }
+  }
 
   sealed trait TypeShape extends Type {
     override def shape: TypeShape = this
     override def captureDescriptor: CaptureDescriptor = CaptureSet.empty
-    @targetName("capturing") infix def ^(cd: CaptureDescriptor): CapturingType = CapturingType(this, cd)
+    @targetName("capturing") infix def ^(cd: CaptureDescriptor): Type = CapturingType(this, cd)
     @targetName("maybeCapturing") infix def ^(cdOpt: Option[CaptureDescriptor]): Type =
       cdOpt.map(CapturingType(this, _)).getOrElse(this)
     private[Types] def toStringCapturing(capDescrStr: String): String = s"$toString^$capDescrStr"

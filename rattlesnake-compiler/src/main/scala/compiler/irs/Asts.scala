@@ -521,7 +521,7 @@ object Asts {
                                       typeShapeTree: TypeShapeTree,
                                       captureDescr: CaptureDescrTree
                                     ) extends TypeTree {
-    def getResolvedTypeOpt: Option[CapturingType] = {
+    def getResolvedTypeOpt: Option[Type] = {
       for {
         shape <- typeShapeTree.getResolvedTypeOpt
         capDescr <- captureDescr.getResolvedDescrOpt
