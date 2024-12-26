@@ -8,6 +8,19 @@ package Test {
         else Error.error("unknown action " + action)
     }
 
+    main fn test(arr String){
+        val array1 = [12.7, 9.47, 11.2, 15.8, 19.8];
+        printD(testFunc(array1, "max"));
+        printD(testFunc(array1, "min"));
+        val array2 = [74.82, -71.68, -11.45, 15.21, 9.999, -9.999];
+        printD(testFunc(array2, "max"));
+        printD(testFunc(array2, "min"));
+    }
+
+    fn printD(d: Double){
+        print(doubleToString(d) + "\n");
+    }
+
 }
 
 package Error {
