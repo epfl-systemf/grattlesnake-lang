@@ -1,7 +1,7 @@
 
 package Test {
 
-    fn testFunc() -> Int {
+    main fn testFunc(arr String) {
         val tree = new Fork(
             new Fork(
                 new Leaf(1),
@@ -12,7 +12,8 @@ package Test {
             ),
             new Leaf(4)
         );
-        return Trees.sum(tree);
+        val sum = Trees.sum(tree);
+        print(intToString(sum));
     }
     
 }
