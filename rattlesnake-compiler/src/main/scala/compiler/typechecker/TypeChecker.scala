@@ -557,7 +557,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         tcCtx.meType
 
       case pkg@PackageRef(packageName) =>
-        if (!tcCtx.allowedPackages.contains(packageName)) {
+        if (packageName != tcCtx.meTypeId && !tcCtx.allowedPackages.contains(packageName)) {
           reportError(s"package $packageName has not been imported", pkg.getPosition)
         }
         tcCtx.resolveType(packageName) match {

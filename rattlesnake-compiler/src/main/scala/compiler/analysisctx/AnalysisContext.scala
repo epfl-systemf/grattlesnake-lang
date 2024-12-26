@@ -223,7 +223,7 @@ object AnalysisContext {
       val packages = mutable.LinkedHashSet[TypeIdentifier]()
       val devices = mutable.LinkedHashSet[Device]()
       pkg.collect {
-        case PackageRef(packageName) =>
+        case PackageRef(packageName) if packageName != pkg.packageName =>
           packages.add(packageName)
         case DeviceRef(device) =>
           devices.add(device)
