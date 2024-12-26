@@ -1,0 +1,46 @@
+// TODO this might be a good example of why it is useful to be able to drop region capabilities
+#nocap;
+
+const cellWidth: Int = 5;
+
+package Test {
+
+    fn createMultiplicationTable(max: Int) -> arr(mut arr Int) {
+        val table = arr(mut arr Int)[max];
+        for var i = 1; i <= max; i += 1 {
+            table[i-1] = arr Int[max];
+            for var j = 1; j <= max; j += 1 {
+                table[i-1][j-1] = i*j;
+            }
+        };
+        return table
+    }
+
+    main fn test(arr String){
+        val table = createMultiplicationTable(4);
+        print(tableToString(table));
+    }
+
+    fn tableToString(table: arr arr Int) -> String {
+        var s = "";
+        for var l = 0; l < #table; l += 1 {
+            val line = table[l];
+            for var c = 0; c < #line; c += 1 {
+                var cellStr = intToString(line[c]);
+                cellStr = prepadTo(cellStr, cellWidth);
+                s += cellStr;
+            };
+            s += "\n";
+        };
+        return s;
+    }
+
+    fn prepadTo(var s: String, n: Int) -> String {
+        val padCnt = n-#s;
+        for var i = 0; i < padCnt; i += 1 {
+            s = " " + s;
+        };
+        return s;
+    }
+    
+}
