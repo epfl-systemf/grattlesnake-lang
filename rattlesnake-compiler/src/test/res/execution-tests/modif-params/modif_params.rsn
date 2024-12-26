@@ -18,5 +18,15 @@ package Test {
         };
         return Test.gcd(inputs[0], inputs[1])
     }
+
+    main fn test(arr String){
+        printI(wrapper([120, 72]));
+        printI(wrapper([15, 95]));
+        printI(wrapper([99, 27]));
+    }
+
+    fn printI(i: Int){
+        print(intToString(i) + "\n");
+    }
     
 }
