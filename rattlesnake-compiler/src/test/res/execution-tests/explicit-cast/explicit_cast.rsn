@@ -14,7 +14,7 @@ package Test {
         return new@reg Sub(10, "Hello");
     }
 
-    fn testFunc() -> String {
+    main fn testFunc(arr String) {
         val r = newregion;
         val a = me.create(r) as Sub;
         var s = me.readY(a) + " ";  // s: "Hello "
@@ -23,7 +23,7 @@ package Test {
         s += me.readY(b as Sub);    // s: "Hello Hello"
         s += " ";                   // s: "Hello Hello "
         s += intToString(a.x);   // s: "Hello Hello 42"
-        return s;
+        print(s);
     }
 
     fn setX(r: Region^, s: Super^{r}){
