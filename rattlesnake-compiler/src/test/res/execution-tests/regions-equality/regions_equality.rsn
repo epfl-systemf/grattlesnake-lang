@@ -1,0 +1,15 @@
+
+package Test {
+
+    main fn testF(arr String) {
+        val r = newregion;
+        val s = newregion;
+        printB(r == s);        // false
+        printB(r == r);        // true
+    }
+
+    fn printB(b: Bool){
+        print(boolToString(b) + "\n")
+    }
+
+}
