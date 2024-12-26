@@ -30,23 +30,19 @@ package Test {
     }
 
     main fn test(arr String){
-        val rectangles = createRectangles([
-            1.2, 4.7, 9.3, 7.0,
-            7.5, 14.1, 7.9, 6.9,
-            9.3, 5.6, 7.1, 11.8
-        ]);
+        val rectangles = createRectangles([1.2, 4.7, 9.3, 7.0, 7.5, 14.1, 7.9, 6.9, 9.3, 5.6, 7.1, 11.8]);
         for var i = 0; i < #rectangles; i += 1 {
             val rectangle = rectangles[i];
             val area = Geometry.computeArea(rectangle);
             printD(area);
             printD(rectangle.upperLeftCorner.x);
             printD(rectangle.upperLeftCorner.y);
-            print("---\n");
+            print("---\n")
         }
     }
 
     fn printD(x: Double){
-        print(doubleToString(x) + "\n");
+        print(doubleToString(x) + "\n")
     }
 
 }
