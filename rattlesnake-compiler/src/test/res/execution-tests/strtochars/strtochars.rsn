@@ -1,0 +1,26 @@
+
+package Test {
+
+    main fn testFunc(arr String) {
+        printArrayWeird(toCharsArray("Rattlesnake"))
+    }
+
+    fn toCharsArray(s: String) -> arr^ Char {
+        val r = newregion;
+        val array = arr@r Char[#s];
+        for var i = 0; i < #s; i += 1 {
+            array[i] = s[i];
+        };
+        return array;
+    }
+
+    fn printArrayWeird(chars: arr^ Char){
+        for var i = 0; i < #chars; i += 1 {
+            print(charToString(chars[i]));
+            if i < #chars-1 && (chars[i] as Int) >= ('a' as Int) && chars[i] != 's' {
+                print(" ");
+            }
+        }
+    }
+
+}
