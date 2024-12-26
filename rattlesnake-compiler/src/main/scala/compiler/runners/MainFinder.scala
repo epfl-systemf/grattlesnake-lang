@@ -25,7 +25,7 @@ object MainFinder {
     if (mainMethods.isEmpty) {
       Failure(NoSuchMethodException("no main method found"))
     } else if (mainMethods.size > 1) {
-      Failure(NoSuchMethodException("more than one main methods found"))
+      Failure(NoSuchMethodException("more than one main method found"))
     } else Success(mainMethods.head.getDeclaringClass.getName)
   }
 
