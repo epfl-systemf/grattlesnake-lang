@@ -1,0 +1,19 @@
+
+package Test {
+
+    fn bar() -> Bool {
+        panic "abc"
+    }
+    
+    main fn testFunc(arr String) -> Void {
+        printB(true || bar());
+        printB(false && me.bar());
+        printB(false || true);
+        printB(true && true);
+    }
+
+    fn printB(b: Bool){
+        print(boolToString(b) + ";");
+    }
+
+}
