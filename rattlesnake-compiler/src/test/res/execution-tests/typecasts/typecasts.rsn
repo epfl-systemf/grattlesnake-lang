@@ -1,8 +1,8 @@
 
 package Test {
 
-    fn testFunc() -> String {
-    
+    main fn testFunc(arr String) {
+
         val ch = 'a';
         val int = 98;
         val chC: Int = ch as Int;
@@ -11,7 +11,8 @@ package Test {
         
         val x = 10.89 + (2 as Double);
         
-        return str + intToString(chC + int) + doubleToString(x) + intToString(x as Int); // expected: "a b19512.8912"
+        val result = str + intToString(chC + int) + doubleToString(x) + intToString(x as Int);
+        print(result);  // expected: "a b19512.8912"
     }
     
 }
