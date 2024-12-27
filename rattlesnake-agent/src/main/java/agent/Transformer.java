@@ -25,7 +25,6 @@ public final class Transformer implements ClassFileTransformer {
         var isProgramClass = !className.contains("/") && !className.contains("$") && !className.equals("FileSystem");
         if (isProgramClass) {
             try {
-                System.err.println("[DEBUG] Instrumenting " + className);   // TODO remove (debug)
                 var reader = new ClassReader(classfileBuffer);
                 var writer = new ClassWriter(reader, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
                 var transformer = new ClassTransformer(writer);
