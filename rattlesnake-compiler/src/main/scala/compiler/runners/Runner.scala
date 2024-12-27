@@ -1,6 +1,6 @@
 package compiler.runners
 
-import compiler.gennames.ClassesAndDirectoriesNames.agentSubdirName
+import compiler.gennames.ClassesAndDirectoriesNames.{agentSubdirName, outDirName}
 
 import java.io.File
 import java.nio.file.Path
@@ -13,18 +13,19 @@ final class Runner(errorCallback: String => Nothing, workingDirectoryPath: Path)
     else ":"
 
   def runMain(mainClassName: String, inheritIO: Boolean): Process = {
-    val agentSubdirPath = workingDirectoryPath.resolve(agentSubdirName)
+    val outDirPath = workingDirectoryPath.resolve(outDirName)
+    val agentSubdirPath = outDirPath.resolve(agentSubdirName)
     val agentJarName = findNameOfJarInDir(agentSubdirPath.toFile, "Rattlesnake-agent",
       "Rattlesnake agent not found")
-    val runtimeJarName = findNameOfJarInDir(workingDirectoryPath.toFile, "Rattlesnake-runtime",
+    val runtimeJarName = findNameOfJarInDir(outDirPath.toFile, "Rattlesnake-runtime",
       "Rattlesnake runtime not found")
     val agentJarFullPath = agentSubdirPath.resolve(agentJarName).toFile.getCanonicalFile
-    val runtimeJarFullPath = workingDirectoryPath.resolve(runtimeJarName).toFile.getCanonicalFile
+    val runtimeJarFullPath = outDirPath.resolve(runtimeJarName).toFile.getCanonicalFile
     val processBuilder = new ProcessBuilder()
       .directory(workingDirectoryPath.toFile)
       .command(
         "java",
-        "-cp", s"$runtimeJarFullPath$classPathsSep.",
+        "-cp", s"$runtimeJarFullPath$classPathsSep./$outDirName",
         s"-javaagent:$agentJarFullPath",
         mainClassName
       )

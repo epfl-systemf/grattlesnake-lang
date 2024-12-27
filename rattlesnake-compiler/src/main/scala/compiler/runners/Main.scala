@@ -187,8 +187,7 @@ object Main {
       val mainClassName =
         findMainClassNameAmong(writtenFilesPaths)
           .fold(e => error(e.getMessage), identity)
-      val outDirPath = outDirBasePath.resolve(outDirName)
-      val process = new Runner(error, outDirPath).runMain(mainClassName, inheritIO = true)
+      val process = new Runner(error, outDirBasePath).runMain(mainClassName, inheritIO = true)
       val exitCode = process.waitFor()
       if (exitCode != 0) {
         System.err.println(s"Process terminated with error code $exitCode")

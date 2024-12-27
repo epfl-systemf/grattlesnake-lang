@@ -58,9 +58,7 @@ class ExecutionTests(programDirName: String) {
     }
 
     val mainClassName = MainFinder.findMainClassNameAmong(writtenFilePaths).fold(throw _, identity)
-    val process =
-      Runner(errorCallback, testOutSubdirPath.resolve(outDirName))
-        .runMain(mainClassName, inheritIO = false)
+    val process = Runner(errorCallback, testOutSubdirPath).runMain(mainClassName, inheritIO = false)
 
     val exitCode = process.waitFor()
     val actOut = readProgramStream(process.getInputStream)
