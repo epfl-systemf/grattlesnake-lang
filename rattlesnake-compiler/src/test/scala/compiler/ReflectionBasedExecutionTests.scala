@@ -12,9 +12,9 @@ import java.io.*
 import java.nio.file.{Files, Path}
 import scala.reflect.ClassTag
 
-class ReflectionBasedTests {
+class ReflectionBasedExecutionTests {
 
-  private val srcDir = "src/test/res/reflection-based-tests"
+  private val srcDir = "src/test/res/reflection-based-execution-tests"
   private val tmpTestDir = "testtmp"
   private val javaVersionCode = V1_8
 
