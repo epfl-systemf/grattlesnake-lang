@@ -1,0 +1,24 @@
+
+package Main {
+
+    main fn main_(arr String) {
+        val text: String;
+        enclosed {} {
+            text = Untrusted.readFile("../iores/data.txt");     //>STACKTRACE
+        };
+        var line = 1;
+        var lineStart = true;
+        for var ci = 0; ci < #text; ci += 1 {
+            if lineStart {
+                print("Line " + intToString(line) + ": ");
+                lineStart = false;
+            };
+            print(charToString(text[ci]));
+            if text[ci] == '\n' {
+                lineStart = true;
+                line += 1;
+            }
+        }
+    }
+
+}
