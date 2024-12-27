@@ -71,6 +71,10 @@ final class Lexer(errorReporter: ErrorReporter) extends CompilerStep[SourceCodeP
       str => str.toDoubleOption.map(DoubleLitToken.apply)
     },
 
+    char('\'') ++ char('\\') ++ char('n') ++ char('\'') into {
+      str => CharLitToken('\n')
+    },
+
     char('\'') ++ anyChar ++ char('\'') into {
       str => CharLitToken(str(1))
     },

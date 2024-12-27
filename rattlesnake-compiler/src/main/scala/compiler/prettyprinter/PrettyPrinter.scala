@@ -174,7 +174,7 @@ final class PrettyPrinter(indentGranularity: Int = 2, displayAllParentheses: Boo
       case CharLit(value) =>
         pps
           .add("'")
-          .add(value.toString)
+          .add(if value == '\n' then "\\n" else value.toString)
           .add("'")
 
       case BoolLit(value) =>
