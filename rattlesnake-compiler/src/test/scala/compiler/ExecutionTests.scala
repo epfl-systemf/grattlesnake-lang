@@ -69,8 +69,7 @@ class ExecutionTests(programDirName: String) {
   }
 
   private def readProgramStream(is: InputStream): String = {
-    Source.fromInputStream(is)
-      .mkString
+    new String(is.readAllBytes())
       .lines()
       .toArray(new Array[String](_))
       .mkString("\n")
