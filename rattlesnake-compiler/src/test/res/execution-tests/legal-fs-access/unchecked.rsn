@@ -1,0 +1,20 @@
+#nocap;
+
+package Untrusted {
+
+    fn readFile(filename: String) -> String {
+        val file = fs.openR(filename);
+        var s = "";
+        var stop = false;
+        while !stop {
+            val c = fs.read(file);
+            stop = c == -1;
+            if !stop {
+                s += charToString(c as Char);
+            }
+        };
+        fs.close(file);
+        return s;
+    }
+
+}
