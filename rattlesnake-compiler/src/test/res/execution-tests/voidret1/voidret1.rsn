@@ -1,3 +1,4 @@
+#nocap;
 
 package Test {
 
@@ -15,8 +16,12 @@ package Test {
         return array
     }
     
-    fn main() -> arr Int {
-        return me.bar(-10, -20, Test.foo())
+    main fn m(arr String) {
+        val a = me.bar(-10, -20, Test.foo());
+        if #a != 3 {
+            panic "bad length";
+        };
+        print(intToString(a[0]) + ", " + intToString(a[1]) + ", " + intToString(a[2]));
     }
     
 }

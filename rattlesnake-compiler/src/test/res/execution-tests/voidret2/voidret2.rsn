@@ -1,0 +1,22 @@
+
+package Test {
+
+    fn func(args: mut arr^ Int) -> Void {
+        val x = -15;
+        args[0] = x;
+        if x < 10 {
+            args[1] = 20;
+            print("?\n\n");
+            return
+        };
+        args[1] = 32;
+        print("...")
+    }
+
+    main fn m(arr String){
+        val a = arr@newregion Int[2];
+        func(a);
+        print(intToString(a[0]) + "\n" + intToString(a[1]));
+    }
+
+}
