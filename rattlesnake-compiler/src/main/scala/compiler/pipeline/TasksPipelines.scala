@@ -3,6 +3,7 @@ package compiler.pipeline
 import compiler.reporting.Errors.{ErrorReporter, ExitCode}
 import compiler.analysisctx.ContextCreator
 import compiler.backend.Backend
+import compiler.importscanner.ImportsScanner
 import compiler.io.{SourceCodeProvider, StringWriter}
 import compiler.irs.Asts
 import compiler.lexer.Lexer
@@ -64,6 +65,7 @@ object TasksPipelines {
   def typeChecker(er: ErrorReporter = defaultErrorReporter,
                   okReporter: String => Unit = println): CompilerStep[List[SourceCodeProvider], Unit] = {
     MultiStep(frontend(er))
+      .andThen(new ImportsScanner())
       .andThen(new ContextCreator(er))
       .andThen(new TypeChecker(er))
       .andThen(new PathsChecker(er))
@@ -84,6 +86,7 @@ object TasksPipelines {
              ): CompilerStep[SourceCodeProvider, Unit] = {
     frontend(er)
       .andThen(Mapper(List(_)))
+      .andThen(new ImportsScanner())
       .andThen(new ContextCreator(er))
       .andThen(new TypeChecker(er))
       .andThen(new PathsChecker(er))
@@ -98,6 +101,7 @@ object TasksPipelines {
                                               javaVersionCode: Int,
                                               er: ErrorReporter) = {
     MultiStep(frontend(er))
+      .andThen(new ImportsScanner())
       .andThen(new ContextCreator(er))
       .andThen(new TypeChecker(er))
       .andThen(new PathsChecker(er))

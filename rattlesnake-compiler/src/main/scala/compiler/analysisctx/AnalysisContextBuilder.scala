@@ -1,5 +1,6 @@
 package compiler.analysisctx
 
+import compiler.importscanner.ModuleImports
 import compiler.irs.Asts.*
 import compiler.pipeline.CompilationStep.ContextCreation
 import compiler.reporting.Errors.{Err, ErrorReporter}
@@ -51,7 +52,7 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
     }
   }
 
-  def addPackage(packageDef: PackageDef)(using langMode: LanguageMode): Unit = {
+  def addPackage(packageDef: PackageDef)(using langMode: LanguageMode, imports: Map[TypeIdentifier, ModuleImports]): Unit = {
     val packageName = packageDef.packageName
     if (checkTypeNotAlreadyDefined(packageName, packageDef.getPosition)) {
       val functions = extractFunctions(packageDef)
@@ -164,7 +165,7 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
     (importsMap, packagesSet, devicesSet)
   }
 
-  private def trackPackagesAndDevices(pkg: PackageDef) = {
+  private def trackPackagesAndDevices(pkg: PackageDef)(using imports: Map[TypeIdentifier, ModuleImports]) = {
     val packages = mutable.LinkedHashSet[TypeIdentifier]()
     val devices = mutable.LinkedHashSet[Device]()
     pkg.collect {
@@ -172,6 +173,11 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
         packages.add(packageName)
       case DeviceRef(device) =>
         devices.add(device)
+      case StructOrModuleInstantiation(regionOpt, typeId, args) =>
+        imports.get(typeId).foreach { modImport =>
+          packages.addAll(modImport.packages)
+          devices.addAll(modImport.devices)
+        }
       case _ => ()
     }
     (packages, devices)
