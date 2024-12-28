@@ -116,6 +116,12 @@ final case class TypeCheckingContext private(
       device.tpe
   }
 
+  def packageIsAllowed(pkg: TypeIdentifier): Boolean = {
+    pkg == meTypeId || allowedPackages.contains(pkg)
+  }
+
+  def deviceIsAllowed(device: Device): Boolean = allowedDevices.contains(device)
+
   def localIsQueried(localId: FunOrVarId): Unit = {
     locals.get(localId).foreach { l =>
       l.usesCollector.queried = true
