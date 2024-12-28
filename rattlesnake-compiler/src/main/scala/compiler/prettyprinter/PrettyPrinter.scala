@@ -110,7 +110,9 @@ final class PrettyPrinter(indentGranularity: Int = 2, displayAllParentheses: Boo
             }
           }
         }
-        addBracesList(fields, ",", onMultipleLines = true)
+        if (fields.nonEmpty) {
+          addBracesList(fields, ",", onMultipleLines = true)
+        }
 
       case ConstDef(constName, typeTreeOpt, value) =>
         pps
