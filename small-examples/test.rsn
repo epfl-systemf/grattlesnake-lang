@@ -48,7 +48,7 @@ package Main {
         return new Baz(r, [new Cell(createFoo(r, 2)), new Cell(createFoo(r, 1))]);
     }
 
-    fn main(arr String){
+    main fn run(arr String){
         val r = newregion;
         val foo = createFoo(r, 5);
         printFoo(foo);
