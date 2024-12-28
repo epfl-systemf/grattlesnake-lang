@@ -5,9 +5,14 @@ import compiler.pathschecker.InitializationStatus.{Initialized, Uninitialized}
 import compiler.pipeline.CompilationStep.PathsChecking
 import compiler.reporting.Errors.{Err, ErrorReporter}
 import compiler.reporting.Position
-import identifiers.FunOrVarId
+import identifiers.{FunOrVarId, TypeIdentifier}
+import lang.Types.NamedTypeShape
 
-final case class State(alwaysTerminated: Boolean, locals: Map[FunOrVarId, InitializationStatus]) {
+final case class State(
+                        alwaysTerminated: Boolean,
+                        locals: Map[FunOrVarId, InitializationStatus],
+                        possibleTypesOfVals: Map[FunOrVarId, Set[TypeIdentifier]]
+                      ) {
 
   def checkIsInitialized(varRef: VariableRef, er: ErrorReporter): Unit = {
     locals.get(varRef.name).foreach {
@@ -33,7 +38,7 @@ final case class State(alwaysTerminated: Boolean, locals: Map[FunOrVarId, Initia
    * @return true iff reachable
    */
   def checkIsReachable(er: ErrorReporter, posOpt: Option[Position]): Boolean = {
-    if (alwaysTerminated){
+    if (alwaysTerminated) {
       er.push(Err(PathsChecking, "unreachable code", posOpt))
     }
     !alwaysTerminated
@@ -50,13 +55,40 @@ final case class State(alwaysTerminated: Boolean, locals: Map[FunOrVarId, Initia
     copy(locals = locals.updated(localId, Initialized))
   }
 
+  def handledCaseSaved(valId: FunOrVarId, tpe: TypeIdentifier): State = {
+    copy(possibleTypesOfVals = possibleTypesOfVals.updatedWith(valId) {
+      case None => Some(Set(tpe))
+      case Some(old) => Some(old + tpe)
+    })
+  }
+  
+  def isUnfeasible(ctx: PathsCheckingContext): Boolean = {
+    val iter = possibleTypesOfVals.iterator
+    while (iter.hasNext){
+      val (valId, coveredTypes) = iter.next()
+      ctx.typeOf(valId) match {
+        case NamedTypeShape(totalTypeId) if !ctx.isReassignable(valId) =>
+          if (ctx.analysisContext.interfaceIsCovered(totalTypeId, coveredTypes)){
+            return true
+          }
+        case _ => ()  // expected to never happen
+      }
+    }
+    false
+  }
+
   def joined(that: State): State = State(
     this.alwaysTerminated && that.alwaysTerminated,
     (for (localId <- (this.locals.keys ++ that.locals.keys))
       yield localId -> joined(
         this.locals.get(localId),
         that.locals.get(localId)
-      )).toMap
+      )).toMap,
+    (for (valId <- (this.possibleTypesOfVals.keySet ++ that.possibleTypesOfVals.keySet))
+      yield valId -> (
+        this.possibleTypesOfVals.get(valId).toSet.flatten ++
+          that.possibleTypesOfVals.get(valId).toSet.flatten
+        )).toMap
   )
 
   private def joined(lStatusOpt: Option[InitializationStatus], rStatusOpt: Option[InitializationStatus]): InitializationStatus = {
@@ -72,6 +104,6 @@ final case class State(alwaysTerminated: Boolean, locals: Map[FunOrVarId, Initia
 
 object State {
 
-  def initial: State = State(false, Map.empty)
+  def initial: State = State(false, Map.empty, Map.empty)
 
 }

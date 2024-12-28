@@ -412,6 +412,14 @@ object Asts {
    * }}}
    */
   final case class IfThenElse(cond: Expr, thenBr: Statement, elseBrOpt: Option[Statement]) extends Statement with Conditional {
+    private var unfeasibleElseFlag: Boolean = false
+    
+    def elseIsUnfeasible: Boolean = unfeasibleElseFlag
+    
+    def markUnfeasibleElse(): Unit = {
+      unfeasibleElseFlag = true
+    }
+    
     override def children: List[Ast] = List(cond, thenBr) ++ elseBrOpt
   }
 

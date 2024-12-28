@@ -1,0 +1,4 @@
+
+struct Sub : Super {    //> E : only interfaces defined in the same source file can be used as supertypes
+    x: Int
+}

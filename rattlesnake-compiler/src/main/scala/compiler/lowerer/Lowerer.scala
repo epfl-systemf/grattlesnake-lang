@@ -116,7 +116,15 @@ final class Lowerer extends CompilerStep[(List[Source], AnalysisContext), (List[
   }
 
   private def lower(ifThenElse: IfThenElse): IfThenElse = propagatePosition(ifThenElse.getPosition) {
-    val lowered = IfThenElse(lower(ifThenElse.cond), lower(ifThenElse.thenBr), ifThenElse.elseBrOpt.map(lower))
+    val lowered = IfThenElse(
+      lower(ifThenElse.cond),
+      lower(ifThenElse.thenBr),
+      ifThenElse.elseBrOpt.map(lower).orElse {
+        if ifThenElse.elseIsUnfeasible
+        then Some(PanicStat(StringLit("incomplete pattern match (should never happen, compiler error)")))
+        else None
+      }
+    )
     lowered.setSmartCasts(ifThenElse.getSmartCasts)
     lowered
   }

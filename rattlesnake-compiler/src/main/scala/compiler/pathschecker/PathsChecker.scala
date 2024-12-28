@@ -12,12 +12,12 @@ import lang.Types.PrimitiveTypeShape.{NothingType, VoidType}
 final class PathsChecker(er: ErrorReporter) extends CompilerStep[(List[Source], AnalysisContext), (List[Source], AnalysisContext)] {
 
   override def apply(input: (List[Source], AnalysisContext)): (List[Source], AnalysisContext) = {
-    val (sources, _) = input
-    for (src <- sources; df <- src.defs){
+    val (sources, analysisContext) = input
+    for (src <- sources; df <- src.defs) {
       df match
         case moduleOrPackageDefTree: ModuleOrPackageDefTree =>
-          for (fun <- moduleOrPackageDefTree.functions){
-            checkFunction(fun)
+          for (fun <- moduleOrPackageDefTree.functions) {
+            checkFunction(fun, analysisContext)
           }
         case StructDef(structName, fields, directSupertypes, isInterface) => ()
         case ConstDef(constName, tpeOpt, value) => ()
@@ -26,11 +26,11 @@ final class PathsChecker(er: ErrorReporter) extends CompilerStep[(List[Source], 
     input
   }
 
-  private def checkFunction(function: FunDef): Unit = {
-    val ctx = PathsCheckingContext.empty
-    val stateWithParams = function.params.foldLeft(State.initial){ (accState, param) =>
+  private def checkFunction(function: FunDef, analysisContext: AnalysisContext): Unit = {
+    val ctx = PathsCheckingContext.empty(analysisContext)
+    val stateWithParams = function.params.foldLeft(State.initial) { (accState, param) =>
       param.paramNameOpt.map { paramName =>
-        ctx.saveLocal(paramName, param.isReassignable)
+        ctx.saveLocal(paramName, param.isReassignable, param.tpe.getResolvedType)
         accState.assignmentSaved(paramName)
       }.getOrElse(accState)
     }
@@ -58,9 +58,9 @@ final class PathsChecker(er: ErrorReporter) extends CompilerStep[(List[Source], 
         state = analyzeStat(state, stat)(using newCtx)
       }
       ctx.unknownVarsRemoved(state)
-    case LocalDef(localName, optTypeAnnot, rhsOpt, isReassignable) =>
+    case localDef@LocalDef(localName, optTypeAnnot, rhsOpt, isReassignable) =>
       val s = rhsOpt.map(analyzeExpr(inState, _)).getOrElse(inState)
-      ctx.saveLocal(localName, isReassignable)
+      ctx.saveLocal(localName, isReassignable, localDef.getVarTypeOpt.get)
       s.newLocalSaved(localName, rhsOpt.isDefined)
     case VarAssig(lhs, rhs) =>
       val s1 = stateAfterEvaluatingAssignmentTarget(inState, lhs)
@@ -71,15 +71,21 @@ final class PathsChecker(er: ErrorReporter) extends CompilerStep[(List[Source], 
       val s = analyzeExpressions(inState, lhs, rhs)
       checkAssignmentTargetCanStillBeAssigned(lhs, s)
       markedAssignedIfVariable(lhs, s)
-    case IfThenElse(cond, thenBr, elseBrOpt) =>
+    case ite@IfThenElse(cond, thenBr, elseBrOpt) =>
       val stateAfterCond = analyzeExpr(inState, cond)
       val stateAfterThen = analyzeStat(stateAfterCond, thenBr)
-      val stateAfterElse = elseBrOpt.map(analyzeStat(stateAfterCond, _)).getOrElse(stateAfterCond)
+      val stateBeforeElse = maybeCaseCoveringCond(cond, stateAfterCond)
+      val stateAfterElse = elseBrOpt.map(analyzeStat(stateBeforeElse, _)).getOrElse {
+        if (stateBeforeElse.isUnfeasible(ctx)) {
+          ite.markUnfeasibleElse()
+          stateBeforeElse.terminated()
+        } else stateBeforeElse
+      }
       stateAfterThen.joined(stateAfterElse)
     case loop@WhileLoop(cond, body) =>
       val stateAfterInitCondEval = analyzeExpr(inState, cond)
       val stateAfterBody = analyzeStat(stateAfterInitCondEval, body)
-      if (stateAfterBody.alwaysTerminated){
+      if (stateAfterBody.alwaysTerminated) {
         er.push(Warning(PathsChecking, "while does not loop, it should probably be an if", loop.getPosition))
       }
       val stateAfterLoop = stateAfterInitCondEval.joined(stateAfterBody)
@@ -88,7 +94,7 @@ final class PathsChecker(er: ErrorReporter) extends CompilerStep[(List[Source], 
       val stateAfterInitStats = analyzeStatements(inState, initStats)
       val stateAfterInitCondEval = analyzeStat(stateAfterInitStats, cond)
       val stateAfterBody = analyzeStat(stateAfterInitCondEval, body)
-      if (stateAfterBody.alwaysTerminated){
+      if (stateAfterBody.alwaysTerminated) {
         er.push(Warning(PathsChecking, "for does not loop, it should probably be an if", loop.getPosition))
       }
       val stateAfterLoop = stateAfterInitCondEval.joined(stateAfterBody)
@@ -105,6 +111,13 @@ final class PathsChecker(er: ErrorReporter) extends CompilerStep[(List[Source], 
     case EnclosedStat(ExplicitCaptureSetTree(capturedExpressions), body) =>
       val s = analyzeExpressions(inState, capturedExpressions)
       analyzeStat(s, body)
+  }
+
+  private def maybeCaseCoveringCond(cond: Expr, initState: State)
+                                   (using ctx: PathsCheckingContext): State = cond match {
+    case TypeTest(VariableRef(name), NamedTypeShapeTree(typeName)) if !ctx.isReassignable(name) =>
+      initState.handledCaseSaved(name, typeName)
+    case _ => initState
   }
 
   private def analyzeExpr(inState: State, expr: Expr)(using ctx: PathsCheckingContext): State = expr match {

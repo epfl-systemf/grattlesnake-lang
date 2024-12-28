@@ -54,6 +54,30 @@ final case class AnalysisContext private(
         } getOrElse FunctionNotFound(ownerSig)
       } getOrElse ModuleNotFound
   }
+  
+  def interfaceIsCovered(totalStructId: TypeIdentifier, possiblyCoveringSubstructs: Set[TypeIdentifier]): Boolean = {
+    val worklist = mutable.Queue.empty[TypeIdentifier]
+    worklist.enqueue(totalStructId)
+    while (worklist.nonEmpty){
+      val currTypeId = worklist.dequeue()
+      if (!possiblyCoveringSubstructs.contains(currTypeId)){
+        resolveTypeAs[StructSignature](currTypeId) match {
+          case None =>
+            // happens if totalStructId is not the id of a struct
+            return false
+          case Some(sig) =>
+            sig.directSubtypesOpt match {
+              case None =>
+                // happens if we have reached a leaf of the substructuring tree that is not covered
+                return false
+              case Some(directSubtypes) =>
+                worklist.enqueueAll(directSubtypes)
+            }
+        }
+      }
+    }
+    true
+  }
 
 }
 
@@ -124,7 +148,11 @@ object AnalysisContext {
       val name = structDef.structName
       if (checkTypeNotAlreadyDefined(name, structDef.getPosition)) {
         val fieldsMap = buildStructFieldsMap(structDef)
-        val sig = StructSignature(name, fieldsMap, structDef.directSupertypes, structDef.isInterface, langMode)
+        val directSubtypesOpt =
+          if structDef.isInterface
+          then Some(mutable.LinkedHashSet.empty[TypeIdentifier])
+          else None
+        val sig = StructSignature(name, fieldsMap, structDef.directSupertypes, directSubtypesOpt, langMode)
         structs.put(name, (sig, structDef.getPosition))
       }
     }
@@ -146,7 +174,7 @@ object AnalysisContext {
         structs.map((tid, sigAndPos) => (tid, sigAndPos._1)).toMap,
         constants.toMap
       )
-      checkFieldsTypeConformance(builtCtx)
+      checkAndResolveSubstructuring(builtCtx)
       checkSubtypingCycles(builtCtx.structs)
       builtCtx
     }
@@ -290,13 +318,18 @@ object AnalysisContext {
       case _ => None
     }
 
-    private def checkFieldsTypeConformance(builtCtx: AnalysisContext): Unit = {
+    private def checkAndResolveSubstructuring(builtCtx: AnalysisContext): Unit = {
       for {
-        (structId, (structSig, posOpt)) <- structs
+        (structId, (structSig, structDefPosOpt)) <- structs
         directSupertypeId <- structSig.directSupertypes
       } {
         structs.get(directSupertypeId) match {
-          case Some((directSupertypeSig, _)) => {
+          case Some((directSupertypeSig, supertypeDefPosOpt)) => {
+            if (structDefPosOpt.get.srcCodeProviderName != supertypeDefPosOpt.get.srcCodeProviderName) {
+              reportError("only interfaces defined in the same source file can be used as supertypes", structDefPosOpt)
+            } else {
+              directSupertypeSig.directSubtypesOpt.foreach(_.add(structId))
+            }
             if (directSupertypeSig.isInterface) {
               // TODO carefully check what happens here
               // i.e. what elements each field is allowed to capture (fields of the super-/subtype)
@@ -314,28 +347,28 @@ object AnalysisContext {
                   case Some(subFieldInfo) =>
                     if (subFieldInfo.isReassignable != superFldInfo.isReassignable) {
                       reportError(s"'$fldName' should be reassignable in '$structId' if and only if it is " +
-                        s"reassignable in its supertype '$directSupertypeId'", posOpt)
+                        s"reassignable in its supertype '$directSupertypeId'", structDefPosOpt)
                     } else if (subFieldInfo.isReassignable && subFieldInfo.tpe != superFldInfo.tpe) {
                       reportError(s"reassignable field '$fldName' should have the same type in '$structId' as in its " +
-                        s"supertype '$directSupertypeId'", posOpt)
+                        s"supertype '$directSupertypeId'", structDefPosOpt)
                     } else if (
                       !subFieldInfo.isReassignable
                         && !subFieldInfo.tpe.subtypeOf(superFldInfo.tpe)(using tcCtx, OcapEnabled)
                     ) {
                       reportError(s"type '${subFieldInfo.tpe}' of field '$fldName' does not conform to its type " +
-                        s"'${superFldInfo.tpe}' in its supertype '$directSupertypeId'", posOpt)
+                        s"'${superFldInfo.tpe}' in its supertype '$directSupertypeId'", structDefPosOpt)
                     }
                   case None =>
-                    reportError(s"$structId cannot subtype '$directSupertypeId': missing field '$fldName'", posOpt)
+                    reportError(s"$structId cannot subtype '$directSupertypeId': missing field '$fldName'", structDefPosOpt)
                 }
                 tcCtx.addLocal(fldName, superFldInfo.tpe, None, superFldInfo.isReassignable, true, () => (), () => ())
               }
             } else {
-              reportError(s"struct '$directSupertypeId' is not an interface", posOpt)
+              reportError(s"struct '$directSupertypeId' is not an interface", structDefPosOpt)
             }
           }
           case None =>
-            reportError(s"interface '$directSupertypeId' is unknown", posOpt)
+            reportError(s"interface '$directSupertypeId' is unknown", structDefPosOpt)
         }
       }
     }

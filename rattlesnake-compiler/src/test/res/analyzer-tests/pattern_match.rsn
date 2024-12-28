@@ -1,0 +1,39 @@
+
+// additional implementation of Tree to make pattern match incomplete in sum
+struct ValuedFork : Tree { l: Tree, value: Int, r: Tree }
+
+interface Tree
+struct Fork : Tree { l: Tree, r: Tree }
+struct Leaf : Tree { value: Int }
+
+package Main {
+
+    fn sum(tree: Tree) -> Int {     //> E : missing return in non-Void function
+        if tree is Fork {
+            return sum(tree.l) + sum(tree.r);
+        } else if tree is Leaf {
+            return tree.value;
+        }
+    }
+
+    fn product(tree: Tree) -> Int {     // OK
+        if tree is ValuedFork {
+            panic "unexpected Tree type"
+        } else if tree is Fork {
+            return product(tree.l) * product(tree.r);
+        } else if tree is Leaf {
+            return tree.value;
+        }
+    }
+
+    fn size(tree: Tree) -> Int {    //> E : missing return in non-Void function
+        if tree is ValuedFork {
+            return size(tree.l) + size(tree.r) + 1;
+        } else if tree is Fork && size(tree.l) == 0 {
+            return size(tree.r) + 1;
+        } else if tree is Leaf {
+            return 1;
+        }
+    }
+
+}

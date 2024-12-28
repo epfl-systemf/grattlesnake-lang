@@ -112,10 +112,12 @@ final case class StructSignature(
                                   id: TypeIdentifier,
                                   fields: mutable.LinkedHashMap[FunOrVarId, FieldInfo],
                                   directSupertypes: Seq[TypeIdentifier],
-                                  isInterface: Boolean,
+                                  directSubtypesOpt: Option[mutable.LinkedHashSet[TypeIdentifier]],
                                   languageMode: LanguageMode
                                 )
   extends TypeSignature, ConstructibleSig, UserConstructibleSig, SelectableSig {
+
+  override def isInterface: Boolean = directSubtypesOpt.isDefined
 
   override def params: mutable.LinkedHashMap[FunOrVarId, FieldInfo] = fields
 
