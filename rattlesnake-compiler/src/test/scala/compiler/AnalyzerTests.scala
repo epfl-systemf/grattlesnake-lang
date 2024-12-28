@@ -82,7 +82,7 @@ class AnalyzerTests(fileName: String) {
     val testRootFile = new File(testRootPathStr)
     val srcFileNames =
       if testRootFile.isDirectory
-      then testRootFile.list().toList
+      then testRootFile.list().toList.map(testRootPathStr + "/" + _)
       else List(testRootPathStr)
     val srcFiles = srcFileNames.map(SourceFile(_))
 
