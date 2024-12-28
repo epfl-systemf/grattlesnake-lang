@@ -16,7 +16,7 @@ final class ContextCreator(errorReporter: ErrorReporter) extends CompilerStep[Li
   }
 
   private def buildContext(sources: List[Source]): AnalysisContext = {
-    val ctxBuilder = new AnalysisContext.Builder(errorReporter)
+    val ctxBuilder = new AnalysisContextBuilder(errorReporter)
     for src <- sources do {
       for df <- src.defs do {
         df match
