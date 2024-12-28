@@ -48,15 +48,20 @@ class ExecutionTests(programDirName: String) {
 
     val expOut = getExpectedData(programDirPath.resolve(stdoutFileName))
 
-    object ExitException extends RuntimeException
+    class ExitException extends RuntimeException
 
-    val er = ErrorReporter(System.err.println, exit = throw ExitException)
+    val er = ErrorReporter(System.err.println, exit = throw new ExitException)
     val srcFiles = getAllSourcesInProgram(programDirPath).map(s => SourceFile(programDirPath.resolve(s).toString))
     val testOutSubdirPath = programDirPath.resolve(testOutSubdirName)
-    val writtenFilePaths =
+    val writtenFilePaths = try {
       TasksPipelines
         .compiler(testOutSubdirPath, javaVersionCode, er)
         .apply(srcFiles)
+    } catch {
+      case e: Throwable =>
+        er.displayErrors()
+        throw e
+    }
 
     def errorCallback(msg: String): Nothing = {
       throw AssertionError(msg)
