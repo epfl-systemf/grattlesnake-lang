@@ -648,8 +648,8 @@ final class TypeChecker(errorReporter: ErrorReporter)
           case Some(moduleSig: ModuleSignature) =>
             checkLangModeCompatibility(s"constructor of module $tid", moduleSig.languageMode, instantiation.getPosition)
             checkCallArgs(moduleSig, moduleSig.voidInitMethodSig, None, args, instantiation.getPosition)
-            checkImplicitImportsAreAllowed(moduleSig.importedPackages, tcCtx.packageIsAllowed, tid, instantiation.getPosition)
-            checkImplicitImportsAreAllowed(moduleSig.importedDevices, tcCtx.deviceIsAllowed, tid, instantiation.getPosition)
+            checkImplicitImportsAreAllowed(moduleSig.importedPackages, tcCtx.packageIsAllowed, "package", tid, instantiation.getPosition)
+            checkImplicitImportsAreAllowed(moduleSig.importedDevices, tcCtx.deviceIsAllowed, "device", tid, instantiation.getPosition)
             NamedTypeShape(tid) ^ computeCaptures(args ++ regionOpt)
           case _ => reportError(s"not found: structure or module '$tid'", instantiation.getPosition)
         }
@@ -745,10 +745,11 @@ final class TypeChecker(errorReporter: ErrorReporter)
   }
 
   private def checkImplicitImportsAreAllowed[T](imports: mutable.LinkedHashSet[T], isAllowed: T => Boolean,
-                                                instantiatedModuleName: TypeIdentifier, posOpt: Option[Position]): Unit = {
+                                                importDescr: String, instantiatedModuleName: TypeIdentifier,
+                                                posOpt: Option[Position]): Unit = {
     for (imp <- imports) {
       if (!isAllowed(imp)) {
-        reportError(s"instantiation of module $instantiatedModuleName requires $imp to be imported in the enclosing package", posOpt)
+        reportError(s"instantiation of module $instantiatedModuleName requires $importDescr $imp to be imported in the enclosing package", posOpt)
       }
     }
   }

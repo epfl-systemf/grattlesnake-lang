@@ -1,0 +1,12 @@
+
+module Foo(device fs){}
+
+package P {}
+
+module Bar(package P){
+
+    fn bar(){
+        new Foo();  //> E : instantiation of module Foo requires device fs to be imported in the enclosing package
+    }
+
+}
