@@ -2,6 +2,7 @@ package compiler.runners
 
 import compiler.gennames.ClassesAndDirectoriesNames.*
 import compiler.gennames.FileExtensions
+import compiler.gennames.FileExtensions.rattlesnake as rattlesnakeExt
 import compiler.io.{SourceCodeProvider, SourceFile}
 import compiler.pipeline.TasksPipelines
 import compiler.runners.MainFinder.findMainClassNameAmong
@@ -30,8 +31,8 @@ object Main {
     val cmdLine = args.mkString(" ")
     try {
       val (action, pathStrs) = parseCmdLine(splitAtSpacesExceptBetweenBrackets(cmdLine))
-      if (pathStrs.exists(!_.endsWith(FileExtensions.rattlesnake))) {
-        error(s"all sources must be .${FileExtensions.rattlesnake} files")
+      if (pathStrs.exists(!_.endsWith(rattlesnakeExt))) {
+        error(s"all sources must be .$rattlesnakeExt files")
       }
       val paths = extractAllPaths(pathStrs)
       val sourceFiles = paths.map(p => SourceFile(p.toString))
@@ -41,18 +42,27 @@ object Main {
     }
   }
 
-  private def extractAllPaths(pathStrs: List[String]) = {
+  private def extractAllPaths(pathStrs: List[String]): List[Path] = {
     pathStrs.flatMap { pathStr =>
-      val wildcard = "*." + FileExtensions.rattlesnake
-      if (pathStr.endsWith(wildcard)) {
-        val parent = Paths.get(pathStr.dropRight(wildcard.length))
+      getWildcardedExtIfAny(pathStr).map { wildcardedExt =>
+        val parent = Paths.get(pathStr.dropRight(("*." + wildcardedExt).length))
         if (parent == null) {
           error("bad source path: " + pathStr)
         }
-        Files.list(parent).toArray(new Array[Path](_))
-      } else {
+        Files.list(parent)
+          .filter(_.toString.endsWith("." + rattlesnakeExt))
+          .toArray(new Array[Path](_))
+          .toSeq
+      }.getOrElse {
         Seq(Paths.get(pathStr))
       }
+    }
+  }
+
+  private def getWildcardedExtIfAny(pathStr: String): Option[String] = {
+    pathStr.replace('\\', '/').split('/').last.toList match {
+      case '*' :: '.' :: ext => Some(ext.mkString)
+      case _ => None
     }
   }
 
