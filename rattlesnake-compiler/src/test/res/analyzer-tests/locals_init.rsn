@@ -1,0 +1,33 @@
+
+package Test {
+
+    fn foo(){
+        var t: Int;
+        val x = t;  //> E : 't' has not been initialized
+        if x == 0 {
+            t = 42;
+        } else {
+            print("Hello");
+        };
+        print(intToString(t));  //> E : cannot prove that 't' has been initialized
+        t = 75;
+        print(intToString(t));
+    }
+
+    fn bar(b1: Bool, b2: Bool) -> R^ {
+        val r = newregion;
+        if b1 {
+            val result: R^{r};
+            if b2 {
+                result = new@r R(78);
+            };
+            return result;  //> E : cannot prove that 'result' has been initialized
+        };
+        panic "!!"
+    }
+
+}
+
+struct R {
+    var value: Int
+}
