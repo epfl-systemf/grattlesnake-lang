@@ -1,7 +1,7 @@
 package compiler.pipeline
 
 import compiler.reporting.Errors.{ErrorReporter, ExitCode}
-import compiler.analysisctx.ContextCreator
+import compiler.analysisctx.{AnalysisContext, ContextCreator}
 import compiler.backend.Backend
 import compiler.importscanner.ImportsScanner
 import compiler.io.{SourceCodeProvider, StringWriter}
@@ -11,6 +11,7 @@ import compiler.lowerer.Lowerer
 import compiler.parser.Parser
 import compiler.pathschecker.PathsChecker
 import compiler.prettyprinter.PrettyPrinter
+import compiler.tailrecchecker.TailrecChecker
 import compiler.typechecker.TypeChecker
 import org.objectweb.asm.ClassVisitor
 
@@ -65,10 +66,9 @@ object TasksPipelines {
   def typeChecker(er: ErrorReporter = defaultErrorReporter,
                   okReporter: String => Unit = println): CompilerStep[List[SourceCodeProvider], Unit] = {
     MultiStep(frontend(er))
-      .andThen(new ImportsScanner())
-      .andThen(new ContextCreator(er))
-      .andThen(new TypeChecker(er))
-      .andThen(new PathsChecker(er))
+      .andThen(frontAnalyzer(er))
+      .andThen(new Lowerer())
+      .andThen(new TailrecChecker(er))
       .andThen(Mapper(_ => okReporter("no error found")))
   }
 
@@ -86,11 +86,9 @@ object TasksPipelines {
              ): CompilerStep[SourceCodeProvider, Unit] = {
     frontend(er)
       .andThen(Mapper(List(_)))
-      .andThen(new ImportsScanner())
-      .andThen(new ContextCreator(er))
-      .andThen(new TypeChecker(er))
-      .andThen(new PathsChecker(er))
+      .andThen(frontAnalyzer(er))
       .andThen(new Lowerer())
+      .andThen(new TailrecChecker(er))
       .andThen(Mapper(_._1.head))
       .andThen(new PrettyPrinter(indentGranularity, displayAllParentheses))
       .andThen(new StringWriter(outputDirectoryPath, filename, er, overwriteFileCallback))
@@ -101,11 +99,9 @@ object TasksPipelines {
                                               javaVersionCode: Int,
                                               er: ErrorReporter) = {
     MultiStep(frontend(er))
-      .andThen(new ImportsScanner())
-      .andThen(new ContextCreator(er))
-      .andThen(new TypeChecker(er))
-      .andThen(new PathsChecker(er))
+      .andThen(frontAnalyzer(er))
       .andThen(new Lowerer())
+      .andThen(new TailrecChecker(er))
       .andThen(new Backend(
         backendMode,
         er,
@@ -116,6 +112,13 @@ object TasksPipelines {
 
   def frontend(er: ErrorReporter): CompilerStep[SourceCodeProvider, Asts.Source] = {
     new Lexer(er).andThen(new Parser(er))
+  }
+
+  private def frontAnalyzer(er: ErrorReporter): CompilerStep[List[Asts.Source], (List[Asts.Source], AnalysisContext)] = {
+    new ImportsScanner()
+      .andThen(new ContextCreator(er))
+      .andThen(new TypeChecker(er))
+      .andThen(new PathsChecker(er))
   }
 
   private def defaultErrorReporter: ErrorReporter =

@@ -262,6 +262,7 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
               environment = RootEnvir,
               meTypeId = structId,
               meCaptureDescr = structSig.getNonSubstitutedCaptureDescr,
+              currFunIdOpt = None,
               allowedPackages = builtCtx.packages.keySet,
               allowedDevices = Device.values.toSet
             )

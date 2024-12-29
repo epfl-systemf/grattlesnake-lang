@@ -200,12 +200,15 @@ final class PrettyPrinter(indentGranularity: Int = 2, displayAllParentheses: Boo
       case DeviceRef(device) =>
         pps.add(device.keyword.str)
 
-      case Call(receiverOpt, funName, args) =>
+      case Call(receiverOpt, funName, args, isTailrec) =>
         receiverOpt.foreach { recv =>
           addAst(recv)
           pps.add(".")
         }
         pps.add(funName)
+        if (isTailrec){
+          pps.add(Operator.ExclamationMark.str)
+        }
         addParenthList(args)
 
       case Indexing(indexed, arg) =>

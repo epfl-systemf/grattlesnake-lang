@@ -295,20 +295,20 @@ final class Parser(errorReporter: ErrorReporter) extends CompilerStep[(List[Posi
 
   private lazy val deviceRef = device map (DeviceRef(_))
 
-  private lazy val varRefOrIntrinsicCall = lowName ::: opt(parenthArgsList) map {
-    case name ^: Some(args) => Call(None, name, args)
+  private lazy val varRefOrNonPrefixedCall = lowName ::: opt(opt(op(ExclamationMark)) ::: parenthArgsList) map {
+    case name ^: Some(exclMarkOpt ^: args) => Call(None, name, args, exclMarkOpt.isDefined)
     case name ^: None => VariableRef(name)
-  } setName "varRefOrIntrinsicCall"
+  } setName "varRefOrNonPrefixedCall"
 
   private lazy val atomicExpr = recursive {
-    varRefOrIntrinsicCall OR me OR pkgRef OR deviceRef OR literalValue OR filledArrayInit OR parenthesizedExpr
+    varRefOrNonPrefixedCall OR me OR pkgRef OR deviceRef OR literalValue OR filledArrayInit OR parenthesizedExpr
   } setName "atomicExpr"
 
   private lazy val selectOrIndexingChain = recursive {
-    atomicExpr ::: repeat((dot ::: lowName ::: opt(parenthArgsList)) OR indexing) map {
+    atomicExpr ::: repeat((dot ::: lowName ::: opt(opt(op(ExclamationMark)) ::: parenthArgsList)) OR indexing) map {
       case atExpr ^: repeated =>
         repeated.foldLeft(atExpr) {
-          case (acc, name ^: Some(args)) => Call(Some(acc), name, args)
+          case (acc, name ^: Some(optExclMark ^: args)) => Call(Some(acc), name, args, optExclMark.isDefined)
           case (acc, name ^: None) => Select(acc, name)
           case (acc, index: Expr) => Indexing(acc, index)
         }

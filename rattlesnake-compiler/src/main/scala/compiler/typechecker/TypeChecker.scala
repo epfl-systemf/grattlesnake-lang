@@ -68,6 +68,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         RootEnvir,
         meTypeId = moduleName,
         meCaptureDescr = moduleSig.getNonSubstitutedCaptureDescr,
+        currFunIdOpt = None,
         moduleSig.importedPackages.toSet,
         moduleSig.importedDevices.toSet
       )
@@ -87,6 +88,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         RootEnvir,
         meTypeId = structName,
         meCaptureDescr = structSig.getNonSubstitutedCaptureDescr,
+        currFunIdOpt = None,
         analysisContext.packages.keySet,
         Device.values.toSet
       )
@@ -115,6 +117,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         val tcCtx = TypeCheckingContext(
           analysisContext,
           RootEnvir,
+          currFunIdOpt = None,
           meTypeId = placeholderMeId,
           meCaptureDescr = CaptureSet.empty,
           allowedPackages = Set.empty,
@@ -156,7 +159,8 @@ final class TypeChecker(errorReporter: ErrorReporter)
     if (isMain && mainFunctionsCollectorOpt.isEmpty) {
       reportError("only packages can contain a main function", funDef.getPosition)
     }
-    val tcCtx = TypeCheckingContext(analysisContext, RootEnvir, meId, meCaptureDescr, allowedPackages, allowedDevices)
+    val tcCtx = TypeCheckingContext(analysisContext, RootEnvir, meId, meCaptureDescr, Some(funName),
+      allowedPackages, allowedDevices)
     for param <- params do {
       val paramType = checkType(param.tpe, idsAreFields = false)(using tcCtx, langMode)
       param.paramNameOpt.foreach { paramName =>
@@ -573,13 +577,13 @@ final class TypeChecker(errorReporter: ErrorReporter)
         }
         device.tpe
 
-      case call@Call(None, funName, args) =>
-        checkFunCall(call, IntrinsicsPackageId, fallbackOwnerOpt = Some(tcCtx.meTypeId))
+      case call@Call(None, funName, args, isTailrec) =>
+        checkFunCall(call, IntrinsicsPackageId, fallbackOwnerOpt = Some(tcCtx.meTypeId), isTailrec)
 
-      case call@Call(Some(receiver), funName, args) =>
+      case call@Call(Some(receiver), funName, args, isTailrec) =>
         checkExpr(receiver).shape match {
           case namedType: NamedTypeShape =>
-            checkFunCall(call, namedType.typeName, None)
+            checkFunCall(call, namedType.typeName, None, isTailrec)
           case recType =>
             reportError(s"expected a module or package type, found $recType", receiver.getPosition)
         }
@@ -818,27 +822,31 @@ final class TypeChecker(errorReporter: ErrorReporter)
   private def checkFunCall(
                             call: Call,
                             owner: TypeIdentifier,
-                            fallbackOwnerOpt: Option[TypeIdentifier]
+                            fallbackOwnerOpt: Option[TypeIdentifier],
+                            isTailrec: Boolean
                           )(using tcCtx: TypeCheckingContext, langMode: LanguageMode): Type = {
     val funName = call.function
     val args = call.args
     val pos = call.getPosition
     tcCtx.resolveFunc(owner, funName) match {
-      case FunctionFound(typeSig, funSig) =>
+      case FunctionFound(ownerSig, funSig) =>
+        if (isTailrec && !tcCtx.isCurrentFunc(ownerSig.id, funName)){
+          reportError("tail calls can only be used to invoke the enclosing function", call.getPosition)
+        }
         call.setResolvedSig(funSig)
         call.cacheMeType(tcCtx.meType)
         val someReceiver = call.receiverOpt.orElse {
-          if typeSig.id == IntrinsicsPackageId then None
+          if ownerSig.id == IntrinsicsPackageId then None
           else Some(MeRef().setType(tcCtx.meType))
         }
         checkLangModeCompatibility(s"function $funName", funSig.languageMode, call.getPosition)
-        checkCallArgs(typeSig, funSig, someReceiver, args, pos)
+        checkCallArgs(ownerSig, funSig, someReceiver, args, pos)
       case ModuleNotFound =>
         args.foreach(checkExpr)
         reportError(s"not found: package or module $owner", pos)
       case FunctionNotFound(typeSig) =>
         fallbackOwnerOpt map { fallbackOwner =>
-          checkFunCall(call, fallbackOwner, None)
+          checkFunCall(call, fallbackOwner, None, isTailrec)
         } getOrElse {
           args.foreach(checkExpr)
           reportError(s"function not found: '$funName' in '${typeSig.id}'", pos)
@@ -911,6 +919,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
       RootEnvir,
       meTypeId = funOwnerSig.id,
       meCaptureDescr = funOwnerSig.getNonSubstitutedCaptureDescr,
+      currFunIdOpt = Some(funSig.name),
       callerCtx.analysisContext.packages.keySet,
       Device.values.toSet
     )
@@ -1024,6 +1033,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         RootEnvir,
         meTypeId = structOrModuleSignature.id,
         meCaptureDescr = structOrModuleSignature.getNonSubstitutedCaptureDescr,
+        currFunIdOpt = None,
         callerCtx.analysisContext.packages.keySet,
         Device.values.toSet
       )

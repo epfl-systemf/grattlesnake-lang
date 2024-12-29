@@ -129,7 +129,7 @@ final class PathsChecker(er: ErrorReporter) extends CompilerStep[(List[Source], 
     case MeRef() => inState
     case PackageRef(pkgName) => inState
     case DeviceRef(device) => inState
-    case call@Call(receiverOpt, function, args) =>
+    case call@Call(receiverOpt, function, args, isTailrec) =>
       val preCallState = analyzeExpressions(inState, receiverOpt ++ args)
       if call.getSignatureOpt.get.retType == NothingType
       then preCallState.terminated()

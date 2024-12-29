@@ -23,6 +23,7 @@ final case class TypeCheckingContext private(
                                               private val locals: mutable.Map[FunOrVarId, LocalInfo] = mutable.Map.empty,
                                               meTypeId: TypeIdentifier,
                                               meCaptureDescr: CaptureDescriptor,
+                                              currentFunIdOpt: Option[FunOrVarId],
                                               allowedPackages: Set[TypeIdentifier],
                                               allowedDevices: Set[Device]
                                             ) {
@@ -121,6 +122,10 @@ final case class TypeCheckingContext private(
   }
 
   def deviceIsAllowed(device: Device): Boolean = allowedDevices.contains(device)
+  
+  def isCurrentFunc(owner: TypeIdentifier, funId: FunOrVarId): Boolean = {
+    owner == meTypeId && currentFunIdOpt.contains(funId)
+  }
 
   def localIsQueried(localId: FunOrVarId): Unit = {
     locals.get(localId).foreach { l =>
@@ -155,11 +160,12 @@ object TypeCheckingContext {
              environment: Environment,
              meTypeId: TypeIdentifier,
              meCaptureDescr: CaptureDescriptor,
+             currFunIdOpt: Option[FunOrVarId],
              allowedPackages: Set[TypeIdentifier],
              allowedDevices: Set[Device]
            ): TypeCheckingContext = {
     TypeCheckingContext(analysisContext, environment, mutable.Map.empty, meTypeId,
-      meCaptureDescr, allowedPackages, allowedDevices)
+      meCaptureDescr, currFunIdOpt, allowedPackages, allowedDevices)
   }
 
   final case class LocalInfo private(

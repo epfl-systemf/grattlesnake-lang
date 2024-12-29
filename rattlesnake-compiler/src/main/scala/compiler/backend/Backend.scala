@@ -248,7 +248,8 @@ final class Backend[V <: ClassVisitor](
   }
 
   private def addFunction(owner: TypeIdentifier, funDef: FunDef, mv: MethodVisitor, analysisContext: AnalysisContext): Unit = {
-    val ctx = CodeGenerationContext.from(analysisContext, owner)
+    val funStartLabel = new Label()
+    val ctx = CodeGenerationContext.from(analysisContext, owner, funStartLabel)
     ctx.addLocal(MeVarId, NamedTypeShape(owner))
     val unnamedParamIdx = new AtomicInteger(0)
     for param <- funDef.params do {
@@ -261,6 +262,7 @@ final class Backend[V <: ClassVisitor](
     }
     lastWrittenLine = -1
     mv.visitCode()
+    mv.visitLabel(funStartLabel)
     generateCode(funDef.body, ctx)(using mv)
     if (ctx.resolveFunc(owner, funDef.funName).getFunSigOrThrow().retType == VoidType) {
       mv.visitInsn(Opcodes.RETURN)
@@ -476,7 +478,19 @@ final class Backend[V <: ClassVisitor](
       case DeviceRef(Device.FileSystem) =>
         mv.visitFieldInsn(Opcodes.GETSTATIC, ClassesAndDirectoriesNames.fileSystemClassName, "$INSTANCE", "LFileSystem;")
 
-      case Call(None, funName, args) => {
+      case Call(_, funName, args, isTailrec) if isTailrec => {
+        for (arg <- args) {
+          generateCode(arg, ctx)
+        }
+        val argsIndices = 1 to args.size
+        for ((arg, idx) <- args.zip(argsIndices).reverse) {
+          val opcode = opcodeFor(arg.getTypeShape, Opcodes.ISTORE, Opcodes.ASTORE)
+          mv.visitIntInsn(opcode, idx)
+        }
+        mv.visitJumpInsn(Opcodes.GOTO, ctx.functionStartLabel)
+      }
+
+      case Call(None, funName, args, isTailrec) => {
         val generateArgs: () => Unit = { () =>
           for arg <- args do {
             generateCode(arg, ctx)
@@ -485,7 +499,7 @@ final class Backend[V <: ClassVisitor](
         IntrinsicsImpl.intrinsicsMap.apply(funName)(generateArgs, mv)
       }
 
-      case Call(Some(receiver), funName, args) => {
+      case Call(Some(receiver), funName, args, isTailrec) => {
         generateCode(receiver, ctx)
         for arg <- args do {
           generateCode(arg, ctx)

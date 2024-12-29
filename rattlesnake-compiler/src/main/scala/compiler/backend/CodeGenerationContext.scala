@@ -15,7 +15,8 @@ final class CodeGenerationContext(
                                    val analysisContext: AnalysisContext,
                                    locals: List[mutable.Map[FunOrVarId, (Type, Int)]],
                                    var currLocalIdx: Int,
-                                   val currentModule: TypeIdentifier
+                                   val currentModule: TypeIdentifier,
+                                   val functionStartLabel: Label
                                  ) {
 
   /**
@@ -26,7 +27,8 @@ final class CodeGenerationContext(
       analysisContext,
       mutable.Map.empty[FunOrVarId, (Type, Int)] :: locals,
       currLocalIdx,
-      currentModule
+      currentModule,
+      functionStartLabel
     )
   }
 
@@ -60,8 +62,9 @@ final class CodeGenerationContext(
 
 object CodeGenerationContext {
 
-  def from(analysisContext: AnalysisContext, currentModule: TypeIdentifier): CodeGenerationContext = {
-    new CodeGenerationContext(analysisContext, List(mutable.Map.empty[FunOrVarId, (Type, Int)]), 0, currentModule)
+  def from(analysisContext: AnalysisContext, currentModule: TypeIdentifier, functionStartLabel: Label): CodeGenerationContext = {
+    new CodeGenerationContext(analysisContext, List(mutable.Map.empty[FunOrVarId, (Type, Int)]), 0,
+      currentModule, functionStartLabel)
   }
 
 }

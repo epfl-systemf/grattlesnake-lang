@@ -256,7 +256,7 @@ final class Lowerer extends CompilerStep[(List[Source], AnalysisContext), (List[
       then None
       else Some(MeRef().setTypeOpt(call.getMeTypeOpt))
     }
-    val loweredCall = Call(loweredReceiverOpt, call.function, call.args.map(lower))
+    val loweredCall = Call(loweredReceiverOpt, call.function, call.args.map(lower), call.isTailrec)
     loweredCall.setResolvedSigOpt(call.getSignatureOpt)
     loweredCall.setTypeOpt(call.getTypeOpt)
     loweredCall

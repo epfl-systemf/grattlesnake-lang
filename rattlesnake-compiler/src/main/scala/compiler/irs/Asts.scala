@@ -315,14 +315,13 @@ object Asts {
   /**
    * Function call: `callee(args)`
    */
-  final case class Call(receiverOpt: Option[Expr], function: FunOrVarId, args: List[Expr]) extends Expr {
+  final case class Call(receiverOpt: Option[Expr], function: FunOrVarId, args: List[Expr], isTailrec: Boolean) extends Expr {
     private val signatureMemo = new Memo[FunctionSignature]
     private val meTypeMemo = new Memo[Type]
     
     export signatureMemo.setOpt as setResolvedSigOpt
     export signatureMemo.set as setResolvedSig
     export signatureMemo.getOpt as getSignatureOpt
-    export meTypeMemo.setOpt as setMeTypeOpt
     export meTypeMemo.set as cacheMeType
     export meTypeMemo.getOpt as getMeTypeOpt
 
