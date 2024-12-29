@@ -1,14 +1,12 @@
 package compiler.runners
 
 import compiler.gennames.ClassesAndDirectoriesNames.*
-import compiler.gennames.{ClassesAndDirectoriesNames, FileExtensions}
+import compiler.gennames.FileExtensions
 import compiler.io.{SourceCodeProvider, SourceFile}
 import compiler.pipeline.TasksPipelines
 import compiler.runners.MainFinder.findMainClassNameAmong
 import org.objectweb.asm.Opcodes.{V11, V17, V1_8}
 
-import java.io.File
-import java.lang.reflect.{Method, Modifier}
 import java.nio.file.{Files, InvalidPathException, Path, Paths}
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -35,10 +33,26 @@ object Main {
       if (pathStrs.exists(!_.endsWith(FileExtensions.rattlesnake))) {
         error(s"all sources must be .${FileExtensions.rattlesnake} files")
       }
-      val sourceFiles = pathStrs.map(SourceFile.apply)
+      val paths = extractAllPaths(pathStrs)
+      val sourceFiles = paths.map(p => SourceFile(p.toFile.getAbsolutePath))
       action.run(sourceFiles)
     } catch {
       case e: InvalidPathException => error(e.getMessage)
+    }
+  }
+
+  private def extractAllPaths(pathStrs: List[String]) = {
+    pathStrs.flatMap { pathStr =>
+      val wildcard = "*." + FileExtensions.rattlesnake
+      if (pathStr.endsWith(wildcard)) {
+        val parent = Paths.get(pathStr.dropRight(wildcard.length))
+        if (parent == null) {
+          error("bad source path: " + pathStr)
+        }
+        Files.list(parent).toArray(new Array[Path](_))
+      } else {
+        Seq(Paths.get(pathStr))
+      }
     }
   }
 
