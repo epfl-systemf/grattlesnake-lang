@@ -2,6 +2,7 @@ package compiler.typechecker
 
 import lang.Capturables.*
 import lang.CaptureDescriptors.*
+
 import scala.collection.mutable
 
 object SubcaptureRelation {
@@ -29,6 +30,11 @@ object SubcaptureRelation {
         case (Mark, Mark) => true
         case (lcs: CaptureSet, rcs: CaptureSet) =>
           isSubcapture(lcs, rcs)
+        // marking
+        case (l, Mark) => true
+        // obscuring
+        case (Mark, r) if r.isRoot =>
+          ctx.environment.insideEnclosure
         case _ => false
       }
     }
