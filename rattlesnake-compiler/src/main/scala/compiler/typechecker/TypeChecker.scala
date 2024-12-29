@@ -238,7 +238,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
       case ExplicitCaptureSetTree(capturedExpressions) =>
         var foundNotCap = false
         capturedExpressions.foreach { captExpr =>
-          if (captExpr.getType.captureDescriptor.isEmpty) {
+          if (captExpr.getType.isPure) {
             reportError("captured expression is not a capability", captExpr.getPosition, isWarning = true)
             foundNotCap = true
           }
@@ -290,7 +290,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         NamedTypeShape(name)
     }
     if (shapePos == OutsideCapturingType && langMode.isOcapEnabled && tcCtx.isInhabitedForSureWhenNoCaptureDescr(shape)) {
-      reportError(s"type is not inhabited: $shape should have a capture set",
+      reportError(s"type is not inhabited: $shape should have a capture descriptor",
         castTargetTypeShapeTree.getPosition, isWarning = true)
     } else if (shapePos == InsideCapturingType && langMode.isOcapEnabled && tcCtx.neverNeedsCapDescr(shape)) {
       reportError(s"unnecessary capture descriptor for $shape", castTargetTypeShapeTree.getPosition, isWarning = true)
@@ -314,7 +314,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
                              (using tcCtx: TypeCheckingContext, langMode: LanguageMode): CaptureSet = {
     CaptureSet(explicitCaptureSetTree.capturedExpressions.flatMap { expr =>
       val exprType = checkExpr(expr)
-      if exprType.captureDescriptor.isEmpty then None
+      if exprType.isPure then None
       else convertToCapturable(expr, Some(errorReporter), idsAreFields)(using tcCtx)
     }.toSet)
   }
@@ -330,7 +330,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
     expr match {
       case VariableRef(name) =>
         tcCtx.getLocalOnly(name) match {
-          case None => None // do not report, an error will be reported checkExpr anyways
+          case None => None // do not report, an error will be reported checkExpr anyway
           case Some(localInfo) if localInfo.isReassignable =>
             maybeReportError(s"'$name' is not capturable, as it is a var")
           case Some(localInfo) if idsAreFields =>

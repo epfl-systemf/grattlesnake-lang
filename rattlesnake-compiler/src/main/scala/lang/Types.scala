@@ -11,6 +11,8 @@ object Types {
   sealed trait Type {
     def shape: TypeShape
     def captureDescriptor: CaptureDescriptor
+    
+    def isPure: Boolean = captureDescriptor.isEmpty
   }
 
   final case class CapturingType private[CapturingType](shape: TypeShape, captureDescriptor: CaptureDescriptor) extends Type {
