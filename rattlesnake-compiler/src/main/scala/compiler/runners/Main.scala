@@ -34,7 +34,7 @@ object Main {
         error(s"all sources must be .${FileExtensions.rattlesnake} files")
       }
       val paths = extractAllPaths(pathStrs)
-      val sourceFiles = paths.map(p => SourceFile(p.toFile.getAbsolutePath))
+      val sourceFiles = paths.map(p => SourceFile(p.toString))
       action.run(sourceFiles)
     } catch {
       case e: InvalidPathException => error(e.getMessage)
