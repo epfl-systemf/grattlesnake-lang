@@ -66,7 +66,7 @@ final case class State(
     val iter = possibleTypesOfVals.iterator
     while (iter.hasNext){
       val (valId, coveredTypes) = iter.next()
-      ctx.typeOf(valId) match {
+      ctx.typeOf(valId).shape match {
         case NamedTypeShape(totalTypeId) if !ctx.isReassignable(valId) =>
           if (ctx.analysisContext.interfaceIsCovered(totalTypeId, coveredTypes)){
             return true
