@@ -75,13 +75,13 @@ final class PathsChecker(er: ErrorReporter) extends CompilerStep[(List[Source], 
       val stateAfterCond = analyzeExpr(inState, cond)
       val stateAfterThen = analyzeStat(stateAfterCond, thenBr)
       val stateBeforeElse = maybeCaseCoveringCond(cond, stateAfterCond)
-      val stateAfterElse = elseBrOpt.map(analyzeStat(stateBeforeElse, _)).getOrElse {
-        if (stateBeforeElse.isUnfeasible(ctx)) {
-          ite.markUnfeasibleElse()
-          stateBeforeElse.terminated()
-        } else stateBeforeElse
+      val stateAfterElse = elseBrOpt.map(analyzeStat(stateBeforeElse, _)).getOrElse(stateBeforeElse)
+      if (elseBrOpt.isEmpty && stateBeforeElse.isUnfeasible(ctx)){
+        ite.markUnfeasibleElse()
+        stateAfterThen
+      } else {
+        stateAfterThen.joined(stateAfterElse)
       }
-      stateAfterThen.joined(stateAfterElse)
     case loop@WhileLoop(cond, body) =>
       val stateAfterInitCondEval = analyzeExpr(inState, cond)
       val stateAfterBody = analyzeStat(stateAfterInitCondEval, body)
