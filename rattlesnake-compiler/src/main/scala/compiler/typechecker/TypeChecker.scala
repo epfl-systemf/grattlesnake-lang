@@ -8,7 +8,8 @@ import compiler.pipeline.CompilationStep.TypeChecking
 import compiler.pipeline.CompilerStep
 import compiler.reporting.Errors.{Err, ErrorReporter, Warning}
 import compiler.reporting.Position
-import compiler.typechecker.SubcaptureRelation.{isCoveredBy, subcaptureOf}
+import compiler.typechecker.ShapeAnnotPosition.{InTypeTest, InsideCapturingType, OutsideCapturingType}
+import compiler.typechecker.SubcaptureRelation.isCoveredBy
 import compiler.typechecker.SubtypeRelation.subtypeOf
 import compiler.typechecker.TypeCheckingContext.LocalInfo
 import identifiers.*
@@ -214,41 +215,20 @@ final class TypeChecker(errorReporter: ErrorReporter)
 
   private def checkType(typeTree: TypeTree, idsAreFields: Boolean)
                        (using tcCtx: TypeCheckingContext, langMode: LanguageMode): Type = {
-    val tpe = typeTree match {
+    typeTree match {
       case capTypeTree@CapturingTypeTree(typeShapeTree, captureDescrTree) =>
         featureIsNotAllowedIfOcapDisabled("capturing types", capTypeTree.getPosition)
+        given ShapeAnnotPosition = InsideCapturingType
         val shape = checkTypeShape(typeShapeTree, idsAreFields)
         val descriptor = checkCaptureDescr(captureDescrTree, idsAreFields)
-        if (langMode == OcapEnabled) {
+        if (langMode.isOcapEnabled) {
           warnOnNonCapAndRedundantCaptures(captureDescrTree)
         }
         CapturingType(shape, descriptor)
       case typeShapeTree: TypeShapeTree =>
+        given ShapeAnnotPosition = OutsideCapturingType
         checkTypeShape(typeShapeTree, idsAreFields)
       case WrapperTypeTree(tpe) => tpe
-    }
-    if (langMode == OcapEnabled) {
-      warnWhenPrimitiveHasInappropriateCaptureDescr(tpe, typeTree.getPosition)
-    }
-    tpe
-  }
-
-  private def warnWhenPrimitiveHasInappropriateCaptureDescr(tpe: Type, posOpt: Option[Position])
-                                                           (using tcCtx: TypeCheckingContext): Unit = {
-    tpe.shape match {
-      case RegionType if !CaptureDescriptors.singletonSetOfRoot.subcaptureOf(tpe.captureDescriptor) =>
-        reportError(
-          s"type $tpe is not inhabited, as a region always captures the root capability",
-          posOpt,
-          isWarning = true
-        )
-      case primType: PrimitiveTypeShape if primType != RegionType && !tpe.captureDescriptor.isEmpty =>
-        reportError(
-          s"capture set is useless, as values of type ${tpe.shape} never capture capabilities",
-          posOpt,
-          isWarning = true
-        )
-      case _ => ()
     }
   }
 
@@ -283,7 +263,8 @@ final class TypeChecker(errorReporter: ErrorReporter)
   }
 
   private def checkTypeShape(typeShapeTree: TypeShapeTree, idsAreFields: Boolean)
-                            (using tcCtx: TypeCheckingContext, langMode: LanguageMode): TypeShape = typeShapeTree match {
+                            (using tcCtx: TypeCheckingContext, langMode: LanguageMode,
+                             shapePos: ShapeAnnotPosition): TypeShape = typeShapeTree match {
     case ArrayTypeShapeTree(elemTypeTree, isModifiable) =>
       val elemType = checkType(elemTypeTree, idsAreFields)
       typeShouldNotCaptureRoot(elemType, "array elements are not allowed to capture the root capability",
@@ -294,10 +275,11 @@ final class TypeChecker(errorReporter: ErrorReporter)
   }
 
   private def checkCastTargetTypeShape(castTargetTypeShapeTree: CastTargetTypeShapeTree)
-                                      (using tcCtx: TypeCheckingContext, langMode: LanguageMode): CastTargetTypeShape = {
-    castTargetTypeShapeTree match {
+                                      (using tcCtx: TypeCheckingContext, langMode: LanguageMode,
+                                       shapePos: ShapeAnnotPosition): CastTargetTypeShape = {
+    val shape = castTargetTypeShapeTree match {
       case PrimitiveTypeShapeTree(primitiveType) =>
-        if (primitiveType == RegionType && langMode == OcapDisabled) {
+        if (primitiveType == RegionType && langMode.isOcapDisabled) {
           featureIsNotAllowedIfOcapDisabled("region type", castTargetTypeShapeTree.getPosition)
         }
         primitiveType
@@ -307,6 +289,13 @@ final class TypeChecker(errorReporter: ErrorReporter)
         }
         NamedTypeShape(name)
     }
+    if (shapePos == OutsideCapturingType && langMode.isOcapEnabled && tcCtx.isInhabitedForSureWhenNoCaptureDescr(shape)) {
+      reportError(s"type is not inhabited: $shape should have a capture set",
+        castTargetTypeShapeTree.getPosition, isWarning = true)
+    } else if (shapePos == InsideCapturingType && langMode.isOcapEnabled && tcCtx.neverNeedsCapDescr(shape)) {
+      reportError(s"unnecessary capture descriptor for $shape", castTargetTypeShapeTree.getPosition, isWarning = true)
+    }
+    shape
   }
 
   private def checkCaptureDescr(captureDescrTree: CaptureDescrTree, idsAreFields: Boolean)
@@ -634,12 +623,12 @@ final class TypeChecker(errorReporter: ErrorReporter)
               instantiation.getPosition
             )
           case Some(structSig: StructSignature) =>
-            if (langMode == OcapEnabled && structSig.isShallowMutable && regionOpt.isEmpty) {
+            if (langMode.isOcapEnabled && structSig.isShallowMutable && regionOpt.isEmpty) {
               reportError(
                 s"cannot instantiate '$tid' without providing a region, since at least one of its fields is reassignable",
                 instantiation.getPosition
               )
-            } else if (langMode == OcapEnabled && !structSig.isShallowMutable && regionOpt.isDefined) {
+            } else if (langMode.isOcapEnabled && !structSig.isShallowMutable && regionOpt.isDefined) {
               reportError(
                 s"providing a region is not necessary here, as ${structSig.id} does not have reassignable fields",
                 regionOpt.get.getPosition,
@@ -716,6 +705,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
 
       case cast@Cast(expr, typeTree) =>
         val exprType = checkExpr(expr)
+        given ShapeAnnotPosition = InTypeTest
         val targetType = checkCastTargetTypeShape(typeTree)
         val castTypeShape = if (exprType.shape.subtypeOf(targetType)) {
           reportError(s"useless conversion: '${exprType.shape}' --> '$targetType'", cast.getPosition, isWarning = true)
@@ -732,6 +722,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
 
       case typeTest@TypeTest(expr, typeTree) =>
         val exprType = checkExpr(expr)
+        given ShapeAnnotPosition = InTypeTest
         val targetType = checkCastTargetTypeShape(typeTree)
         if (exprType.shape.subtypeOf(targetType)) {
           reportError(s"test will always be true, as '${exprType.shape}' is a subtype of '$targetType'",
@@ -830,7 +821,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
     val pos = call.getPosition
     tcCtx.resolveFunc(owner, funName) match {
       case FunctionFound(ownerSig, funSig) =>
-        if (isTailrec && !tcCtx.isCurrentFunc(ownerSig.id, funName)){
+        if (isTailrec && !tcCtx.isCurrentFunc(ownerSig.id, funName)) {
           reportError("tail calls can only be used to invoke the enclosing function", call.getPosition)
         }
         call.setResolvedSig(funSig)
@@ -1137,11 +1128,11 @@ final class TypeChecker(errorReporter: ErrorReporter)
   }
 
   private def shapeOnlyIfOcapDisabled(tpe: Type)(using langMode: LanguageMode): Type = {
-    if langMode == OcapEnabled then tpe else tpe.shape
+    if langMode.isOcapEnabled then tpe else tpe.shape
   }
 
   private def featureIsNotAllowedIfOcapDisabled(featureDescr: String, posOpt: Option[Position])(using langMode: LanguageMode): Unit = {
-    if (langMode == OcapDisabled) {
+    if (langMode.isOcapDisabled) {
       reportError(featureDescr + " should not be used, as ocap is disabled in the current file", posOpt)
     }
   }

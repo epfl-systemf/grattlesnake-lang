@@ -10,7 +10,7 @@ import lang.*
 import lang.Capturables.{ConcreteCapturable, IdPath, Path}
 import lang.CaptureDescriptors.*
 import lang.Types.*
-import lang.Types.PrimitiveTypeShape.{NothingType, VoidType}
+import lang.Types.PrimitiveTypeShape.{NothingType, RegionType, VoidType}
 
 import scala.collection.mutable
 
@@ -92,6 +92,22 @@ final case class TypeCheckingContext private(
         // defPos and declHasTypeAnnot are never used for constants, as long as constants can only be of primitive types
         .map(tpe => LocalInfo(name, tpe, isReassignable = false, defPos = None, declHasTypeAnnot = false, RootEnvir))
     )
+  }
+  
+  def isInhabitedForSureWhenNoCaptureDescr(shape: TypeShape): Boolean = shape match {
+    case RegionType => true
+    case NamedTypeShape(typeName) =>
+      resolveTypeAs[StructSignature](typeName) match {
+        case Some(structSig) => structSig.isShallowMutable
+        case None => false
+      }
+    case _ => false
+  }
+  
+  def neverNeedsCapDescr(shape: TypeShape): Boolean = shape match {
+    case RegionType => false
+    case shape: PrimitiveTypeShape => true
+    case _ => false
   }
 
   def lookup(path: Path): Type = path match {
