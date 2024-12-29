@@ -1,0 +1,13 @@
+
+struct Counter {
+    var evens: Int,
+    var odds: Int
+}
+
+package Counters {
+
+    fn toString(cnt: Counter^) -> String {
+        return intToString(cnt.evens) + " evens, " + intToString(cnt.odds) + " odds";
+    }
+
+}
