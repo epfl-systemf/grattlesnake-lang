@@ -1,6 +1,6 @@
 package compiler.importscanner
 
-import compiler.irs.Asts.{ModuleDef, PackageImport, DeviceImport}
+import compiler.irs.Asts.{DeviceImport, ModuleDef, PackageImport}
 import identifiers.TypeIdentifier
 import lang.Device
 

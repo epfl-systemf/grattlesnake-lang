@@ -1,9 +1,9 @@
 package compiler
 
-import compiler.gennames.{FileExtensions, ClassesAndDirectoriesNames}
-import compiler.reporting.Errors.{ErrorReporter, ExitCode}
+import compiler.gennames.{ClassesAndDirectoriesNames, FileExtensions}
 import compiler.io.SourceFile
 import compiler.pipeline.TasksPipelines
+import compiler.reporting.Errors.{ErrorReporter, ExitCode}
 import org.junit.Assert.*
 import org.junit.{After, Test}
 import org.objectweb.asm.Opcodes.V1_8

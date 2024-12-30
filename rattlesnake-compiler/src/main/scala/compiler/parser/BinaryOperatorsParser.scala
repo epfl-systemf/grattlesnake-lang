@@ -1,10 +1,10 @@
 package compiler.parser
 
-import compiler.reporting.Errors.ErrorReporter
 import compiler.irs.Asts.{BinaryOp, Expr}
 import compiler.irs.Tokens.OperatorToken
 import compiler.parser.ParseTree.^:
 import compiler.parser.TreeParsers.*
+import compiler.reporting.Errors.ErrorReporter
 import lang.Operator
 
 import scala.annotation.tailrec

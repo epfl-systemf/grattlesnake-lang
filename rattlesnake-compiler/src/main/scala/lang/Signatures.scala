@@ -2,7 +2,7 @@ package lang
 
 import identifiers.*
 import lang.Capturables.*
-import lang.CaptureDescriptors.{Mark, CaptureDescriptor, CaptureSet}
+import lang.CaptureDescriptors.{CaptureDescriptor, CaptureSet, Mark}
 import lang.LanguageMode.{OcapDisabled, OcapEnabled}
 import lang.Types.PrimitiveTypeShape.{RegionType, VoidType}
 import lang.Types.{NamedTypeShape, PrimitiveTypeShape, Type}

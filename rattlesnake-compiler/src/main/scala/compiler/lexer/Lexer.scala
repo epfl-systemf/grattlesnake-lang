@@ -1,10 +1,10 @@
 package compiler.lexer
 
 import compiler.io.SourceCodeProvider
-import compiler.reporting.Errors.{CompilationError, Err, ErrorReporter, Fatal}
 import compiler.irs.Tokens.*
 import compiler.lexer.Matchers.*
 import compiler.pipeline.{CompilationStep, CompilerStep}
+import compiler.reporting.Errors.{CompilationError, Err, ErrorReporter, Fatal}
 import compiler.reporting.Position
 import lang.Types.PrimitiveTypeShape
 import lang.{Keyword, Operator}

@@ -1,10 +1,10 @@
 package compiler
 
-import compiler.reporting.Errors.{ErrorReporter, ExitCode}
 import compiler.io.SourceFile
 import compiler.lexer.Lexer
 import compiler.parser.Parser
 import compiler.prettyprinter.PrettyPrinter
+import compiler.reporting.Errors.{ErrorReporter, ExitCode}
 import org.junit.Assert.{assertEquals, fail}
 import org.junit.{ComparisonFailure, Test}
 

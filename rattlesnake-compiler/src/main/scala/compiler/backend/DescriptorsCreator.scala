@@ -2,8 +2,8 @@ package compiler.backend
 
 import compiler.analysisctx.AnalysisContext
 import identifiers.{FunOrVarId, IntrinsicsPackageId, NormalTypeId, TypeIdentifier}
-import lang.Types.{PrimitiveTypeShape, Type, TypeShape}
 import lang.*
+import lang.Types.{PrimitiveTypeShape, Type, TypeShape}
 
 object DescriptorsCreator {
 

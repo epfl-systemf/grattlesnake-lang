@@ -1,7 +1,7 @@
 package compiler.controlflowchecker
 
-import compiler.irs.Asts.VariableRef
 import compiler.controlflowchecker.InitializationStatus.{Initialized, Uninitialized}
+import compiler.irs.Asts.VariableRef
 import compiler.pipeline.CompilationStep.PathsChecking
 import compiler.reporting.Errors.{Err, ErrorReporter}
 import compiler.reporting.Position

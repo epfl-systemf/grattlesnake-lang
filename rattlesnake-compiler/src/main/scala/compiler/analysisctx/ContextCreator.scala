@@ -1,9 +1,9 @@
 package compiler.analysisctx
 
 import compiler.importscanner.ModuleImports
-import compiler.reporting.Errors.ErrorReporter
 import compiler.irs.Asts.*
 import compiler.pipeline.CompilerStep
+import compiler.reporting.Errors.ErrorReporter
 import identifiers.TypeIdentifier
 
 /**

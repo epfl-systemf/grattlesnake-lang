@@ -3,8 +3,8 @@ package compiler.backend
 import compiler.analysisctx.AnalysisContext
 import compiler.backend.DescriptorsCreator.descriptorForType
 import identifiers.TypeIdentifier
-import lang.Types.PrimitiveTypeShape.DoubleType
 import lang.Types.*
+import lang.Types.PrimitiveTypeShape.DoubleType
 import lang.{StructSignature, TypeSignature, Types}
 import org.objectweb.asm
 import org.objectweb.asm.Opcodes

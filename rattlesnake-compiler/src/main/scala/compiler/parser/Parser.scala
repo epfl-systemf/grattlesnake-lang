@@ -9,12 +9,12 @@ import compiler.pipeline.CompilerStep
 import compiler.reporting.Errors.{ErrorReporter, Fatal}
 import compiler.reporting.{Errors, Position}
 import identifiers.*
-import lang.Keyword.{Enclosed, *}
-import lang.Operator.*
-import lang.Types.{ArrayTypeShape, NamedTypeShape, TypeShape}
 import lang.*
 import lang.Capturables.*
+import lang.Keyword.{Enclosed, *}
 import lang.LanguageMode.{OcapDisabled, OcapEnabled}
+import lang.Operator.*
+import lang.Types.{ArrayTypeShape, NamedTypeShape, TypeShape}
 
 import scala.compiletime.uninitialized
 

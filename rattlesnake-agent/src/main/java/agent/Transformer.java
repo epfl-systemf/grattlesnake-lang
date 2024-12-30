@@ -3,12 +3,10 @@ package agent;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.instrument.ClassFileTransformer;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.ProtectionDomain;
 

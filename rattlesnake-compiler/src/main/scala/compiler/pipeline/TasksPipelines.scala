@@ -1,16 +1,16 @@
 package compiler.pipeline
 
-import compiler.reporting.Errors.{ErrorReporter, ExitCode}
 import compiler.analysisctx.{AnalysisContext, ContextCreator}
 import compiler.backend.Backend
+import compiler.controlflowchecker.ControlFlowChecker
 import compiler.importscanner.ImportsScanner
 import compiler.io.{SourceCodeProvider, StringWriter}
 import compiler.irs.Asts
 import compiler.lexer.Lexer
 import compiler.lowerer.Lowerer
 import compiler.parser.Parser
-import compiler.controlflowchecker.ControlFlowChecker
 import compiler.prettyprinter.PrettyPrinter
+import compiler.reporting.Errors.{ErrorReporter, ExitCode}
 import compiler.tailrecchecker.TailrecChecker
 import compiler.typechecker.TypeChecker
 import org.objectweb.asm.ClassVisitor

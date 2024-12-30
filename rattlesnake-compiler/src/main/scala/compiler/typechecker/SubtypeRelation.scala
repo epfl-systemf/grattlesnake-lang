@@ -1,12 +1,12 @@
 package compiler.typechecker
 
-import compiler.typechecker.TypeCheckingContext
 import compiler.typechecker.SubcaptureRelation.subcaptureOf
+import compiler.typechecker.TypeCheckingContext
 import identifiers.TypeIdentifier
 import lang.LanguageMode.OcapDisabled
-import lang.{LanguageMode, StructSignature}
 import lang.Types.*
 import lang.Types.PrimitiveTypeShape.*
+import lang.{LanguageMode, StructSignature}
 
 import scala.collection.mutable
 
