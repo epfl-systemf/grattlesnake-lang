@@ -1,4 +1,4 @@
-package compiler.pathschecker
+package compiler.controlflowchecker
 
 import compiler.analysisctx.AnalysisContext
 import identifiers.FunOrVarId
@@ -9,13 +9,13 @@ import scala.collection.mutable
 /**
  * @param localsAndConsts localId -> (isReassignable, type)
  */
-final class PathsCheckingContext private(
+final class ControlFlowCheckingContext private(
                                           val analysisContext: AnalysisContext,
                                           localsAndConsts: mutable.Map[FunOrVarId, (Boolean, Type)]
                                         ) {
 
-  def copyForNarrowedScope(): PathsCheckingContext =
-    PathsCheckingContext(analysisContext, mutable.Map.from(localsAndConsts))
+  def copyForNarrowedScope(): ControlFlowCheckingContext =
+    ControlFlowCheckingContext(analysisContext, mutable.Map.from(localsAndConsts))
 
   def saveLocal(id: FunOrVarId, isReassignable: Boolean, tpe: Type): Unit = {
     localsAndConsts.put(id, (isReassignable, tpe))
@@ -33,8 +33,8 @@ final class PathsCheckingContext private(
 
 }
 
-object PathsCheckingContext {
-  def empty(analysisContext: AnalysisContext): PathsCheckingContext = PathsCheckingContext(
+object ControlFlowCheckingContext {
+  def empty(analysisContext: AnalysisContext): ControlFlowCheckingContext = ControlFlowCheckingContext(
     analysisContext,
     mutable.Map.empty
   )

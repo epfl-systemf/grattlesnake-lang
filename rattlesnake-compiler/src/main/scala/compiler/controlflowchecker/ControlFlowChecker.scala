@@ -1,4 +1,4 @@
-package compiler.pathschecker
+package compiler.controlflowchecker
 
 import compiler.analysisctx.AnalysisContext
 import compiler.irs.Asts
@@ -9,7 +9,7 @@ import compiler.reporting.Errors.{Err, ErrorReporter, Warning}
 import lang.Types.PrimitiveTypeShape.{NothingType, VoidType}
 
 
-final class PathsChecker(er: ErrorReporter) extends CompilerStep[(List[Source], AnalysisContext), (List[Source], AnalysisContext)] {
+final class ControlFlowChecker(er: ErrorReporter) extends CompilerStep[(List[Source], AnalysisContext), (List[Source], AnalysisContext)] {
 
   override def apply(input: (List[Source], AnalysisContext)): (List[Source], AnalysisContext) = {
     val (sources, analysisContext) = input
@@ -27,7 +27,7 @@ final class PathsChecker(er: ErrorReporter) extends CompilerStep[(List[Source], 
   }
 
   private def checkFunction(function: FunDef, analysisContext: AnalysisContext): Unit = {
-    val ctx = PathsCheckingContext.empty(analysisContext)
+    val ctx = ControlFlowCheckingContext.empty(analysisContext)
     val stateWithParams = function.params.foldLeft(State.initial) { (accState, param) =>
       param.paramNameOpt.map { paramName =>
         ctx.saveLocal(paramName, param.isReassignable, param.tpe.getResolvedType)
@@ -47,7 +47,7 @@ final class PathsChecker(er: ErrorReporter) extends CompilerStep[(List[Source], 
     }
   }
 
-  private def analyzeStat(inState: State, statement: Statement)(using ctx: PathsCheckingContext): State = statement match {
+  private def analyzeStat(inState: State, statement: Statement)(using ctx: ControlFlowCheckingContext): State = statement match {
     case expr: Expr => analyzeExpr(inState, expr)
     case Block(stats) =>
       val newCtx = ctx.copyForNarrowedScope()
@@ -114,13 +114,13 @@ final class PathsChecker(er: ErrorReporter) extends CompilerStep[(List[Source], 
   }
 
   private def maybeCaseCoveringCond(cond: Expr, initState: State)
-                                   (using ctx: PathsCheckingContext): State = cond match {
+                                   (using ctx: ControlFlowCheckingContext): State = cond match {
     case TypeTest(VariableRef(name), NamedTypeShapeTree(typeName)) if !ctx.isReassignable(name) =>
       initState.handledCaseSaved(name, typeName)
     case _ => initState
   }
 
-  private def analyzeExpr(inState: State, expr: Expr)(using ctx: PathsCheckingContext): State = expr match {
+  private def analyzeExpr(inState: State, expr: Expr)(using ctx: ControlFlowCheckingContext): State = expr match {
     case literal: Literal => inState
     case RegionCreation() => inState
     case varRef: VariableRef =>
@@ -162,16 +162,16 @@ final class PathsChecker(er: ErrorReporter) extends CompilerStep[(List[Source], 
       analyzeExpr(s, expr)
   }
 
-  private def analyzeStatements(inState: State, statSeq: Iterable[Statement])(using PathsCheckingContext): State =
+  private def analyzeStatements(inState: State, statSeq: Iterable[Statement])(using ControlFlowCheckingContext): State =
     statSeq.foldLeft(inState)(analyzeStat)
 
-  private def analyzeExpressions(inState: State, exprSeq: Iterable[Expr])(using PathsCheckingContext): State =
+  private def analyzeExpressions(inState: State, exprSeq: Iterable[Expr])(using ControlFlowCheckingContext): State =
     exprSeq.foldLeft(inState)(analyzeExpr)
 
-  private def analyzeExpressions(inState: State, exprSeq: Expr*)(using PathsCheckingContext): State =
+  private def analyzeExpressions(inState: State, exprSeq: Expr*)(using ControlFlowCheckingContext): State =
     exprSeq.foldLeft(inState)(analyzeExpr)
 
-  private def stateAfterEvaluatingAssignmentTarget(inState: State, target: Expr)(using PathsCheckingContext): State = {
+  private def stateAfterEvaluatingAssignmentTarget(inState: State, target: Expr)(using ControlFlowCheckingContext): State = {
     target match {
       case VariableRef(name) => inState
       case Select(lhs, selected) => analyzeExpr(inState, lhs)
@@ -187,7 +187,7 @@ final class PathsChecker(er: ErrorReporter) extends CompilerStep[(List[Source], 
     }
   }
 
-  private def checkAssignmentTargetCanStillBeAssigned(target: Expr, state: State)(using ctx: PathsCheckingContext): Unit = target match {
+  private def checkAssignmentTargetCanStillBeAssigned(target: Expr, state: State)(using ctx: ControlFlowCheckingContext): Unit = target match {
     case varRef: VariableRef if !ctx.isReassignable(varRef.name) =>
       state.checkIsNotInitialized(varRef, er)
     case _ => ()

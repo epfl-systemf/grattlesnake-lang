@@ -9,7 +9,7 @@ import compiler.irs.Asts
 import compiler.lexer.Lexer
 import compiler.lowerer.Lowerer
 import compiler.parser.Parser
-import compiler.pathschecker.PathsChecker
+import compiler.controlflowchecker.ControlFlowChecker
 import compiler.prettyprinter.PrettyPrinter
 import compiler.tailrecchecker.TailrecChecker
 import compiler.typechecker.TypeChecker
@@ -118,7 +118,7 @@ object TasksPipelines {
     new ImportsScanner()
       .andThen(new ContextCreator(er))
       .andThen(new TypeChecker(er))
-      .andThen(new PathsChecker(er))
+      .andThen(new ControlFlowChecker(er))
   }
 
   private def defaultErrorReporter: ErrorReporter =

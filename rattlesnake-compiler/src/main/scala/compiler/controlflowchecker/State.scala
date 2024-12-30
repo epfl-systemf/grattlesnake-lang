@@ -1,7 +1,7 @@
-package compiler.pathschecker
+package compiler.controlflowchecker
 
 import compiler.irs.Asts.VariableRef
-import compiler.pathschecker.InitializationStatus.{Initialized, Uninitialized}
+import compiler.controlflowchecker.InitializationStatus.{Initialized, Uninitialized}
 import compiler.pipeline.CompilationStep.PathsChecking
 import compiler.reporting.Errors.{Err, ErrorReporter}
 import compiler.reporting.Position
@@ -62,7 +62,7 @@ final case class State(
     })
   }
   
-  def isUnfeasible(ctx: PathsCheckingContext): Boolean = {
+  def isUnfeasible(ctx: ControlFlowCheckingContext): Boolean = {
     val iter = possibleTypesOfVals.iterator
     while (iter.hasNext){
       val (valId, coveredTypes) = iter.next()

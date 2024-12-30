@@ -1,4 +1,4 @@
-package compiler.pathschecker
+package compiler.controlflowchecker
 
 enum InitializationStatus {
   case Initialized, Uninitialized, PossiblyUninitialized
