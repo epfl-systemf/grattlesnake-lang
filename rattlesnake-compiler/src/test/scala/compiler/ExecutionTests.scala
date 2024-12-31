@@ -6,7 +6,7 @@ import compiler.io.SourceFile
 import compiler.pipeline.TasksPipelines
 import compiler.reporting.Errors.ErrorReporter
 import compiler.runners.{MainFinder, Runner}
-import org.junit.Assert.{assertEquals, assertNotEquals, assertTrue}
+import org.junit.Assert.{assertEquals, assertNotEquals, assertTrue, fail}
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -134,13 +134,21 @@ class ExecutionTests(programDirName: String) {
   private type Filename = String
 
   private def assertMatches(expMsg: String, reqEntries: Seq[(Filename, Int)], actErr: String): Unit = {
+    assertTrue("expected an error but stderr is empty", actErr.nonEmpty)
     val lines = actErr.lines().toArray(new Array[String](_))
     val actMsg = lines.head.split(':')(1)
     val actualEntries = extractEntriesFromStacktrace(lines.tail)
-    assertEquals(expMsg.trim, actMsg.trim)
-    for (fn, l) <- reqEntries do {
-      assertTrue(s"expected entry not found: $fn:$l",
-        actualEntries.exists((afn, alo) => afn == fn && alo.contains(l)))
+    assertEquals("Actual stderr: " + actErr, expMsg.trim, actMsg.trim)
+    val missingEntries = reqEntries.filterNot { (fn, l) =>
+      actualEntries.exists((afn, alo) => afn == fn && alo.contains(l))
+    }
+    if (missingEntries.nonEmpty) {
+      fail(
+        "Missing entries in stacktrace:\n"
+          + missingEntries.map((fn, l) => s"$fn:$l").mkString("\n")
+          + "\nActual stderr: "
+          + actErr
+      )
     }
   }
 
