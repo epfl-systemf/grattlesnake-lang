@@ -10,7 +10,7 @@ public final class Rattlesnake$runtime {
 
     private static final WeakHashMap<Object, Integer> objToRegion = new WeakHashMap<>();
 
-    public static void saveObjectInRegion(Object obj, int region){
+    public static void saveObjectInRegion(Object obj, int region) {
         objToRegion.put(obj, region);
     }
 
@@ -31,10 +31,12 @@ public final class Rattlesnake$runtime {
     }
 
     public static void allowFilesystem() {
+        assertFileSystemAllowed();
         inPrepEnvir.fileSystem = true;
     }
 
-    public static void allowRegion(int region){
+    public static void allowRegion(int region) {
+        assertRegionAllowed(region);
         inPrepEnvir.regions.add(region);
     }
 
@@ -55,66 +57,70 @@ public final class Rattlesnake$runtime {
         }
     }
 
-    private static void assertRegionOfIdIsAllowed(int regionId){
-        if (currentEnvir != null && !currentEnvir.regions.contains(regionId)){
+    private static void assertRegionOfIdIsAllowed(int regionId) {
+        if (currentEnvir != null && !currentEnvir.regions.contains(regionId)) {
             throw new Rattlesnake$IllegalCapabilityUseError(
                     "illegal modification of a region in a dynamically restricted environment");
         }
     }
 
-    public static void assertRegionAllowed(Object obj){
+    public static void assertRegionAllowed(Object obj) {
         var region = objToRegion.get(obj);
-        if (region != null){
+        if (region != null) {
             assertRegionOfIdIsAllowed(region);
         }
     }
 
-    public static void monitoredArrayStore(int[] array, int idx, int value){
+    public static void monitoredArrayStore(int[] array, int idx, int value) {
         assertRegionAllowed(array);
         array[idx] = value;
     }
 
-    public static void monitoredArrayStore(long[] array, int idx, long value){
+    public static void monitoredArrayStore(long[] array, int idx, long value) {
         assertRegionAllowed(array);
         array[idx] = value;
     }
 
-    public static void monitoredArrayStore(float[] array, int idx, float value){
+    public static void monitoredArrayStore(float[] array, int idx, float value) {
         assertRegionAllowed(array);
         array[idx] = value;
     }
 
-    public static void monitoredArrayStore(double[] array, int idx, double value){
+    public static void monitoredArrayStore(double[] array, int idx, double value) {
         assertRegionAllowed(array);
         array[idx] = value;
     }
 
-    public static void monitoredArrayStore(Object[] array, int idx, Object value){
+    public static void monitoredArrayStore(Object[] array, int idx, Object value) {
         assertRegionAllowed(array);
         array[idx] = value;
     }
 
-    public static void monitoredArrayStore(byte[] array, int idx, byte value){
+    public static void monitoredArrayStore(byte[] array, int idx, byte value) {
         assertRegionAllowed(array);
         array[idx] = value;
     }
 
-    public static void monitoredArrayStore(char[] array, int idx, char value){
+    public static void monitoredArrayStore(char[] array, int idx, char value) {
         assertRegionAllowed(array);
         array[idx] = value;
     }
 
-    public static void monitoredArrayStore(short[] array, int idx, short value){
+    public static void monitoredArrayStore(short[] array, int idx, short value) {
         assertRegionAllowed(array);
         array[idx] = value;
     }
 
-    //// REGIONS ////
+    /// / REGIONS ////
 
     private static int lastRegion = 0;
 
     public static int newRegion() {
-        return ++lastRegion;
+        var r = ++lastRegion;
+        if (currentEnvir != null) {
+            currentEnvir.regions.add(r);
+        }
+        return r;
     }
 
 }

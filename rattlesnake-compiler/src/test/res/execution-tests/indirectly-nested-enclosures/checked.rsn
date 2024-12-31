@@ -1,0 +1,11 @@
+
+package Main {
+
+    main fn program(arr String){
+        val array = arr@newregion Int[0];
+        enclosed {} {
+            Unsafe.shuffle(array);   //>STACKTRACE
+        }
+    }
+
+}

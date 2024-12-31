@@ -1,0 +1,12 @@
+#nocap;
+
+package Unsafe {
+
+    fn shuffle(mut arr Int){
+        Logging.writeLog(
+            new Logger("critical-system-data.txt"),
+            "Doing... not what my signature suggests!"
+        );
+    }
+
+}

@@ -1,0 +1,13 @@
+#nocap;
+
+struct UnsafeLogger {
+    file: Int
+}
+
+package UnsafeLoggers {
+
+    fn log(l: UnsafeLogger, msg: String){
+        fs.write(l.file, msg)
+    }
+
+}

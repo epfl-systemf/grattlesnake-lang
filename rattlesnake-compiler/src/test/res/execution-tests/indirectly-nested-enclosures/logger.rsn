@@ -1,0 +1,13 @@
+
+module Logger(logFileName: String, package UnsafeLoggers, device fs){
+
+    fn log(msg: String){
+        enclosed {fs} {   //>STACKTRACE
+            val logFile = fs.openA(me.logFileName);
+            val unsafeLogger = new UnsafeLogger(logFile);
+            UnsafeLoggers.log(unsafeLogger, msg);
+            fs.close(logFile);
+        }
+    }
+
+}
