@@ -73,10 +73,10 @@ public final class FileSystem {
         Rattlesnake$runtime.assertFileSystemAllowed();
         var dir = new File(path);
         var alreadyExists = dir.exists();
-        if (!alreadyExists) {
-            dir.mkdirs();
+        if (alreadyExists) {
+            return true;
         }
-        return alreadyExists;
+        return dir.mkdirs();
     }
 
     public boolean delete(String path) {
