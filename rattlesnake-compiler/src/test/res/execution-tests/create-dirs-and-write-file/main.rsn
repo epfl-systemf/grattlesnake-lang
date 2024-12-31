@@ -1,0 +1,27 @@
+
+package Main {
+
+    main fn main_(arr String){
+
+        val writer = FileWriters.mkWriter(["path", "to", "the", "file.txt"]);
+        writer.write("Cobra\n");
+        writer.write("Python\n");
+        writer.write("Rattlesnake\n");
+
+        readAndPrint();
+    }
+
+    fn readAndPrint(){
+        val file = fs.openR("path/to/the/file.txt");
+        var stop = false;
+        while !stop {
+            val c = fs.read(file);
+            stop = c == -1;
+            if !stop {
+                print(charToString(c as Char));
+            };
+        };
+        fs.close(file);
+    }
+
+}
