@@ -15,6 +15,7 @@ import org.objectweb.asm.Opcodes.V1_8
 
 import java.io.InputStream
 import java.nio.file.{Files, Path, Paths}
+import java.util.Comparator
 import scala.io.Source
 import scala.util.Using
 
@@ -46,13 +47,18 @@ class ExecutionTests(programDirName: String) {
   @Test
   def runProgramTest(): Unit = {
 
+    val testOutSubdirPath = programDirPath.resolve(testOutSubdirName)
+    if (testOutSubdirPath.toFile.exists()) {
+      deleteRecursively(testOutSubdirPath)
+    }
+
     val expOut = getExpectedData(programDirPath.resolve(stdoutFileName))
 
     class ExitException extends RuntimeException
 
     val er = ErrorReporter(System.err.println, exit = throw new ExitException)
     val srcFiles = getAllSourcesInProgram(programDirPath).map(s => SourceFile(programDirPath.resolve(s).toString))
-    val testOutSubdirPath = programDirPath.resolve(testOutSubdirName)
+
     val writtenFilePaths = try {
       TasksPipelines
         .compiler(testOutSubdirPath, javaVersionCode, er)
@@ -85,8 +91,21 @@ class ExecutionTests(programDirName: String) {
       assertMatches(msgOpt.get, stacktraceEntries, actErr)
       assertNotEquals("expected an error, but got a zero exit code", 0, exitCode)
     } else {
+      if (exitCode != 0) {
+        System.err.println("Errors:")
+        System.err.println(actErr)
+      }
       assertEquals(s"unexpected output on stdout (exit code: $exitCode)", expOut, actOut)
       assertEquals(s"non-zero exit code", 0, exitCode)
+    }
+  }
+
+  private def deleteRecursively(path: Path): Unit = {
+    // code adapted from https://www.baeldung.com/java-delete-directory
+    Using(Files.walk(path)) { paths =>
+      paths.sorted(Comparator.reverseOrder())
+        .map(_.toFile())
+        .forEach(_.delete())
     }
   }
 
