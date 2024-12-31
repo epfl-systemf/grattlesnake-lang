@@ -207,7 +207,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         }
       )
     case pkgImp@PackageImport(packageId) =>
-      if (!tcCtx.knowsUserDefType(packageId)) {
+      if (tcCtx.resolveTypeAs[PackageSignature](packageId).isEmpty) {
         reportError(s"unknown package: $packageId", imp.getPosition)
       }
     case DeviceImport(device) => ()
