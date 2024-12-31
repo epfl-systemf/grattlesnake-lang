@@ -570,7 +570,8 @@ final class TypeChecker(errorReporter: ErrorReporter)
         device.tpe
 
       case call@Call(None, funName, args, isTailrec) =>
-        checkFunCall(call, IntrinsicsPackageId, fallbackOwnerOpt = Some(tcCtx.meTypeId), isTailrec)
+        val fallbackOwnerOpt = if tcCtx.currentModuleIsPackage then Some(tcCtx.meTypeId) else None
+        checkFunCall(call, IntrinsicsPackageId, fallbackOwnerOpt, isTailrec)
 
       case call@Call(Some(receiver), funName, args, isTailrec) =>
         checkExpr(receiver).shape match {

@@ -29,6 +29,8 @@ final case class TypeCheckingContext private(
                                             ) {
 
   def meType: Type = NamedTypeShape(meTypeId) ^ meCaptureDescr
+  
+  def currentModuleIsPackage: Boolean = resolveTypeAs[PackageSignature](meTypeId).isDefined
 
   // Locals that have been created by this context (i.e. not obtained via a copy)
   private val ownedLocals: mutable.Set[FunOrVarId] = mutable.Set.empty

@@ -29,7 +29,7 @@ module Sorting(package Arrays) {
     fn selectionSort(array: mut arr^ Int) {
         for var i = 0; i < #array; i += 1 {
             val minIdx = Arrays.minIdx(array, i);
-            swap(array, i, minIdx)
+            me.swap(array, i, minIdx)
         };
     }
 
