@@ -8,6 +8,7 @@ object FileSystemApi extends Device.DeviceApi {
 
   val openR: NormalFunOrVarId = NormalFunOrVarId("openR")
   val openW: NormalFunOrVarId = NormalFunOrVarId("openW")
+  val openA: NormalFunOrVarId = NormalFunOrVarId("openA")
   val write: NormalFunOrVarId = NormalFunOrVarId("write")
   val read: NormalFunOrVarId = NormalFunOrVarId("read")
   val close: NormalFunOrVarId = NormalFunOrVarId("close")
@@ -18,6 +19,7 @@ object FileSystemApi extends Device.DeviceApi {
   override def functions: Map[FunOrVarId, FunctionSignature] = Map(
     FunctionSignature(openR, List(None -> StringType), IntType, OcapEnabled).keyed,
     FunctionSignature(openW, List(None -> StringType), IntType, OcapEnabled).keyed,
+    FunctionSignature(openA, List(None -> StringType), IntType, OcapEnabled).keyed,
     FunctionSignature(write, List(None -> IntType, None -> StringType), VoidType, OcapEnabled).keyed,
     FunctionSignature(read, List(None -> IntType), IntType, OcapEnabled).keyed,
     FunctionSignature(close, List(None -> IntType), VoidType, OcapEnabled).keyed,

@@ -31,6 +31,14 @@ public final class FileSystem {
         return id;
     }
 
+    public int openA(String path) throws IOException {
+        Rattlesnake$runtime.assertFileSystemAllowed();
+        var id = idGen.incrementAndGet();
+        var writer = new FileWriter(path, true);
+        writers.put(id, writer);
+        return id;
+    }
+
     public void write(int fileId, String s) throws IOException {
         Rattlesnake$runtime.assertFileSystemAllowed();
         var writer = writers.get(fileId);
