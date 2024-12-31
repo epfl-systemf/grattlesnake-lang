@@ -601,7 +601,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
           case _ => ()
         }
         val elemType = checkType(elemTypeTree, idsAreFields = false)
-        requireRegionIffOcapEnabled(regionOpt, arrayInit.getPosition, isMutableObj = true)
+        requireAndCheckRegionIffOcapEnabled(regionOpt, arrayInit.getPosition, isMutableObj = true)
         ArrayTypeShape(elemType, modifiable = true) ^ computeCaptures(regionOpt.toList)
 
       case filledArrayInit@FilledArrayInit(Nil, regionOpt) =>
@@ -609,7 +609,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
 
       case filledArrayInit@FilledArrayInit(arrayElems, regionOpt) =>
         val isMutableArray = regionOpt.isDefined || langMode.isOcapDisabled
-        requireRegionIffOcapEnabled(regionOpt, filledArrayInit.getPosition, isMutableArray)
+        requireAndCheckRegionIffOcapEnabled(regionOpt, filledArrayInit.getPosition, isMutableArray)
         val types = arrayElems.map(checkExpr)
         computeJoinOf(types.toSet, tcCtx) match {
           case Some(elemsJoin) =>
@@ -647,7 +647,9 @@ final class TypeChecker(errorReporter: ErrorReporter)
             checkCallArgs(moduleSig, moduleSig.voidInitMethodSig, None, args, instantiation.getPosition)
             checkImplicitImportsAreAllowed(moduleSig.importedPackages, tcCtx.packageIsAllowed, "package", tid, instantiation.getPosition)
             checkImplicitImportsAreAllowed(moduleSig.importedDevices, tcCtx.deviceIsAllowed, "device", tid, instantiation.getPosition)
-            NamedTypeShape(tid) ^ computeCaptures(args ++ regionOpt)
+            val pkgCapabilities = moduleSig.importedPackages.map(CapPackage(_)).toSet
+            val devicesCapabilities = moduleSig.importedDevices.map(CapDevice(_)).toSet
+            NamedTypeShape(tid) ^ computeCaptures(args ++ regionOpt).union(CaptureSet(pkgCapabilities ++ devicesCapabilities))
           case _ => reportError(s"not found: structure or module '$tid'", instantiation.getPosition)
         }
 
@@ -782,7 +784,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
     }
   }
 
-  private def requireRegionIffOcapEnabled(regionOpt: Option[Expr], posOpt: Option[Position], isMutableObj: Boolean)
+  private def requireAndCheckRegionIffOcapEnabled(regionOpt: Option[Expr], posOpt: Option[Position], isMutableObj: Boolean)
                                          (using ctx: TypeCheckingContext, langMode: LanguageMode): Unit = {
     regionOpt.foreach(checkExpr)
     (regionOpt, langMode) match {
@@ -1124,7 +1126,8 @@ final class TypeChecker(errorReporter: ErrorReporter)
   }
 
   private def minimalCaptureSetFor(expr: Expr)(using TypeCheckingContext): CaptureDescriptor = {
-    convertToCapturable(expr, erOpt = None, idsAreFields = false) map { path =>
+    if expr.getType.isPure then CaptureSet.empty
+    else convertToCapturable(expr, erOpt = None, idsAreFields = false) map { path =>
       CaptureSet(path)
     } getOrElse {
       expr.getType.captureDescriptor
