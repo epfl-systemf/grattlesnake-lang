@@ -28,8 +28,6 @@ sealed trait TypeSignature {
 
   def getNonSubstitutedCaptureDescr: CaptureDescriptor
 
-  def getNonSubstitutedType: Type = NamedTypeShape(id) ^ getNonSubstitutedCaptureDescr
-
   def isInterface: Boolean
 
   def languageMode: LanguageMode
@@ -43,6 +41,8 @@ sealed trait ConstructibleSig extends TypeSignature {
 
   def params: mutable.LinkedHashMap[FunOrVarId, FieldInfo]
 
+  def globalCaptures: Set[Capturable]
+
   def voidInitMethodSig: FunctionSignature =
     FunctionSignature(ConstructorFunId, params.toList.map((id, info) => (Some(id), info.tpe)), VoidType, languageMode)
 }
@@ -55,7 +55,9 @@ sealed trait SelectableSig extends TypeSignature {
   this: ConstructibleSig =>
 
   def typeOfSelectIfCapturable(sel: FunOrVarId): Option[Type] =
-    params.get(sel).filter(!_.isReassignable).map(_.tpe)
+    params.get(sel)
+      .filter(!_.isReassignable)
+      .map(_.tpe)
 }
 
 sealed trait ImporterSig extends TypeSignature {
@@ -65,6 +67,9 @@ sealed trait ImporterSig extends TypeSignature {
   def importedPackages: mutable.LinkedHashSet[TypeIdentifier]
 
   def importedDevices: mutable.LinkedHashSet[Device]
+
+  def globalCaptures: Set[Capturable] =
+    importedPackages.map(CapPackage(_)).toSet ++ importedDevices.map(CapDevice(_))
 
   def params: mutable.LinkedHashMap[FunOrVarId, FieldInfo] =
     paramImports.map((id, tpe) => id -> FieldInfo(tpe, isReassignable = false, languageMode))
@@ -79,11 +84,8 @@ final case class ModuleSignature(
                                 )
   extends TypeSignature, ConstructibleSig, UserConstructibleSig, ImporterSig, SelectableSig, FunctionsProviderSig {
 
-  override def getNonSubstitutedCaptureDescr: CaptureDescriptor = CaptureSet((
-    paramImports.map((paramId, _) => MePath.dot(paramId)) ++
-      importedPackages.map(CapPackage(_)) ++
-      importedDevices.map(CapDevice(_))
-    ).toSet)
+  override def getNonSubstitutedCaptureDescr: CaptureDescriptor =
+    CaptureSet(globalCaptures ++ paramImports.map((paramId, _) => MePath.dot(paramId)))
 
   override def languageMode: LanguageMode = OcapEnabled
 
@@ -100,10 +102,9 @@ final case class PackageSignature(
 
   override def paramImports: mutable.LinkedHashMap[FunOrVarId, Type] = mutable.LinkedHashMap.empty
 
-  override def getNonSubstitutedCaptureDescr: CaptureDescriptor = CaptureSet((
-    importedPackages.map(CapPackage(_)) ++
-      importedDevices.map(CapDevice(_))
-    ).toSet)
+  override def getNonSubstitutedCaptureDescr: CaptureDescriptor = CaptureSet(globalCaptures)
+
+  def asType: Type = NamedTypeShape(id) ^ CaptureSet(globalCaptures)
 
   override def isInterface: Boolean = false
 }
@@ -123,9 +124,16 @@ final case class StructSignature(
 
   def isShallowMutable: Boolean = fields.exists(_._2.isReassignable)
 
-  override def getNonSubstitutedCaptureDescr: CaptureDescriptor = CaptureSet(
-    fields.filter((_, info) => !info.tpe.captureDescriptor.isEmpty).map((id, _) => MePath.dot(id)).toSet
+  override def getNonSubstitutedCaptureDescr: CaptureDescriptor = CaptureDescriptors.unionOf(
+    fields.filter((_, info) => !info.tpe.captureDescriptor.isEmpty)
+      .map { (id, info) =>
+        if info.isReassignable
+        then info.tpe.captureDescriptor
+        else CaptureSet(MePath.dot(id))
+      }
   )
+
+  override def globalCaptures: Set[Capturable] = Set.empty
 }
 
 final case class FieldInfo(tpe: Type, isReassignable: Boolean, languageMode: LanguageMode) {

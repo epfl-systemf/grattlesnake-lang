@@ -14,6 +14,14 @@ object CaptureDescriptors {
       case (thisCs: CaptureSet, thatCs: CaptureSet) => thisCs.union(thatCs)
       case _ => Mark
     }
+    
+    def union(thatOpt: Option[CaptureDescriptor]): CaptureDescriptor =
+      thatOpt.map(this.union).getOrElse(this)
+    
+    def mapSet(f: Set[Capturable] => Set[Capturable]): CaptureDescriptor = this match {
+      case Mark => Mark
+      case CaptureSet(set) => CaptureSet(f(set))
+    }
 
   }
 

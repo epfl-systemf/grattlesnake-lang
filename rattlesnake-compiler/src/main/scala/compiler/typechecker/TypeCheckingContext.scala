@@ -129,7 +129,7 @@ final case class TypeCheckingContext private(
   def lookup(capturable: ConcreteCapturable): Type = capturable match {
     case path: Path => lookup(path)
     case Capturables.CapPackage(pkgName) =>
-      packages.get(pkgName).map(_.getNonSubstitutedType)
+      packages.get(pkgName).map(_.asType)
         .getOrElse(UndefinedTypeShape)
     case Capturables.CapDevice(device) =>
       device.tpe

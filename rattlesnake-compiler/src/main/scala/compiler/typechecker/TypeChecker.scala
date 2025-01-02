@@ -561,7 +561,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
           reportError(s"package $packageName has not been imported", pkg.getPosition)
         }
         tcCtx.resolveType(packageName) match {
-          case Some(packageSignature: PackageSignature) => packageSignature.getNonSubstitutedType
+          case Some(packageSignature: PackageSignature) => packageSignature.asType
           case Some(_) => reportError(s"$packageName is not a package and is thus not allowed here", pkg.getPosition)
           case None => reportError(s"not found: $packageName", pkg.getPosition)
         }
@@ -605,7 +605,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         }
         val elemType = checkType(elemTypeTree, idsAreFields = false)
         requireAndCheckRegionIffOcapEnabled(regionOpt, arrayInit.getPosition, isMutableObj = true)
-        ArrayTypeShape(elemType, modifiable = true) ^ computeCaptures(regionOpt.toList)
+        ArrayTypeShape(elemType, modifiable = true) ^ regionOpt.map(minimalCaptureSetFor)
 
       case filledArrayInit@FilledArrayInit(Nil, regionOpt) =>
         reportError("cannot infer type of empty array, use 'arr <type>[0]' instead", filledArrayInit.getPosition)
@@ -616,7 +616,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         val types = arrayElems.map(checkExpr)
         computeJoinOf(types.toSet, tcCtx) match {
           case Some(elemsJoin) =>
-            ArrayTypeShape(elemsJoin, isMutableArray) ^ computeCaptures(regionOpt.toList)
+            ArrayTypeShape(elemsJoin, isMutableArray) ^ regionOpt.map(minimalCaptureSetFor)
           case None =>
             reportError("cannot infer array type", filledArrayInit.getPosition)
         }
@@ -644,7 +644,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
             }
             checkLangModeCompatibility(s"constructor of struct $tid", structSig.languageMode, instantiation.getPosition)
             checkCallArgs(structSig, structSig.voidInitMethodSig, None, args, instantiation.getPosition)
-            NamedTypeShape(tid) ^ computeCaptures(args ++ regionOpt)
+            NamedTypeShape(tid) ^ computeCaptures(args, regionOpt, structSig)
           case Some(moduleSig: ModuleSignature) =>
             checkLangModeCompatibility(s"constructor of module $tid", moduleSig.languageMode, instantiation.getPosition)
             checkCallArgs(moduleSig, moduleSig.voidInitMethodSig, None, args, instantiation.getPosition)
@@ -652,7 +652,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
             checkImplicitImportsAreAllowed(moduleSig.importedDevices, tcCtx.deviceIsAllowed, "device", tid, instantiation.getPosition)
             val pkgCapabilities = moduleSig.importedPackages.map(CapPackage(_)).toSet
             val devicesCapabilities = moduleSig.importedDevices.map(CapDevice(_)).toSet
-            NamedTypeShape(tid) ^ computeCaptures(args ++ regionOpt).union(CaptureSet(pkgCapabilities ++ devicesCapabilities))
+            NamedTypeShape(tid) ^ computeCaptures(args, regionOpt, moduleSig)
           case _ => reportError(s"not found: structure or module '$tid'", instantiation.getPosition)
         }
 
@@ -959,9 +959,20 @@ final class TypeChecker(errorReporter: ErrorReporter)
     }
     substitutor.subst(funSig.retTypeForMode(callerLangMode), callPos)
   }
-
-  private def computeCaptures(captured: List[Expr])(using TypeCheckingContext): CaptureDescriptor =
-    CaptureDescriptors.unionOf(captured.map(minimalCaptureSetFor))
+    
+  private def computeCaptures(args: List[Expr], regionOpt: Option[Expr], sig: ConstructibleSig)
+                             (using TypeCheckingContext): CaptureDescriptor = {
+    val paramsIter = sig.params.iterator
+    args.foldLeft[CaptureDescriptor](CaptureSet(sig.globalCaptures: Set[Capturable])){ (cd, arg) =>
+      cd.union(
+        paramsIter.nextOption().map { (fieldId, fieldInfo) =>
+          if fieldInfo.isReassignable
+          then fieldInfo.tpe.captureDescriptor.mapSet(_.filter(_.isInstanceOf[GlobalCapturable]))
+          else minimalCaptureSetFor(arg)
+        }.getOrElse(minimalCaptureSetFor(arg))
+      )
+    }.union(regionOpt.map(minimalCaptureSetFor))
+  }
 
   private def detectSmartCasts(expr: Expr, ctx: TypeCheckingContext): Map[FunOrVarId, CastTargetTypeShape] = {
     expr match {

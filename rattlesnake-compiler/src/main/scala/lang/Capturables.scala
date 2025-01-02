@@ -31,16 +31,18 @@ object Capturables {
     override def root: RootPath = directRoot.root
     override def toString: String = s"$directRoot.$fld"
   }
+  
+  sealed trait GlobalCapturable extends Capturable
 
-  final case class CapPackage(pkgName: TypeIdentifier) extends ConcreteCapturable {
+  final case class CapPackage(pkgName: TypeIdentifier) extends ConcreteCapturable, GlobalCapturable {
     override def toString: String = pkgName.stringId
   }
 
-  final case class CapDevice(device: Device) extends ConcreteCapturable {
+  final case class CapDevice(device: Device) extends ConcreteCapturable, GlobalCapturable {
     override def toString: String = device.toString
   }
 
-  case object RootCapability extends Capturable {
+  case object RootCapability extends GlobalCapturable {
     override def toString: String = Keyword.Cap.str
   }
   
