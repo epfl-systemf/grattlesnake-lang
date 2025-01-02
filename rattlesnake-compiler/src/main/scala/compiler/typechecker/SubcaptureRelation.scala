@@ -33,7 +33,7 @@ object SubcaptureRelation {
         // marking
         case (l, Mark) => true
         // obscuring
-        case (Mark, r) if r.isRoot =>
+        case (Mark, r) if r.coversRoot =>
           ctx.environment.insideEnclosure
         case _ => false
       }

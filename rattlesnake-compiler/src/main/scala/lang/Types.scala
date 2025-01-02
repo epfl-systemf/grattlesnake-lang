@@ -20,7 +20,7 @@ object Types {
     
     override def toString: String =
       if captureDescriptor.isEmpty then shape.toString
-      else if captureDescriptor.isRoot then shape.toStringCapturing("")
+      else if captureDescriptor.coversRoot then shape.toStringCapturing("")
       else shape.toStringCapturing(captureDescriptor.toString)
   }
   

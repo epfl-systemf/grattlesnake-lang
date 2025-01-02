@@ -6,7 +6,7 @@ object CaptureDescriptors {
 
   sealed trait CaptureDescriptor {
 
-    def isRoot: Boolean
+    def coversRoot: Boolean
 
     def isEmpty: Boolean
 
@@ -18,7 +18,7 @@ object CaptureDescriptors {
   }
 
   case object Mark extends CaptureDescriptor {
-    override def isRoot: Boolean = false
+    override def coversRoot: Boolean = false
 
     override def isEmpty: Boolean = false
 
@@ -26,7 +26,7 @@ object CaptureDescriptors {
   }
 
   final case class CaptureSet(set: Set[Capturable]) extends CaptureDescriptor {
-    override def isRoot: Boolean = set.contains(RootCapability)
+    override def coversRoot: Boolean = set.contains(RootCapability)
 
     def union(that: CaptureSet): CaptureSet = CaptureSet(this.set ++ that.set)
 

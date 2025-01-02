@@ -175,6 +175,9 @@ final class TypeChecker(errorReporter: ErrorReporter)
       if (param.isReassignable && param.paramNameOpt.isEmpty) {
         reportError("unnamed reassignable parameter", param.getPosition, isWarning = true)
       }
+      if (param.isReassignable && paramType.captureDescriptor.coversRoot){
+        reportError("reassignable parameters are not allowed to capture the root capability", param.getPosition)
+      }
     }
     val optRetType = optRetTypeTree.map(checkType(_, idsAreFields = false)(using tcCtx, langMode))
     val expRetType = optRetType.getOrElse(VoidType)
@@ -392,7 +395,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         else optAnnotType.orElse(inferredTypeOpt).getOrElse {
           reportError(s"Please provide a type for uninitialized local $localName", localDef.getPosition)
         }
-      if (isReassignable && actualType.captureDescriptor.isRoot) {
+      if (isReassignable && actualType.captureDescriptor.coversRoot) {
         reportError(s"illegal capture set: var '$localName' has type $actualType, which captures the root",
           localDef.getPosition)
       }
