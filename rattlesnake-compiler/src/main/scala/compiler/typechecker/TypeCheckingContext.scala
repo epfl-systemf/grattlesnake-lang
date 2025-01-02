@@ -5,7 +5,7 @@ import compiler.pipeline.CompilationStep.TypeChecking
 import compiler.reporting.Errors.{ErrorReporter, Warning}
 import compiler.reporting.{Errors, Position}
 import compiler.typechecker.TypeCheckingContext.{LocalInfo, LocalUsesCollector}
-import identifiers.{FunOrVarId, TypeIdentifier}
+import identifiers.{FunOrVarId, SpecialFields, TypeIdentifier}
 import lang.*
 import lang.Capturables.{ConcreteCapturable, IdPath, Path}
 import lang.CaptureDescriptors.*
@@ -29,17 +29,11 @@ final case class TypeCheckingContext private(
                                             ) {
 
   def meType: Type = NamedTypeShape(meTypeId) ^ meCaptureDescr
-  
+
   def currentModuleIsPackage: Boolean = resolveTypeAs[PackageSignature](meTypeId).isDefined
 
   // Locals that have been created by this context (i.e. not obtained via a copy)
   private val ownedLocals: mutable.Set[FunOrVarId] = mutable.Set.empty
-
-  /**
-   * @return a copy of this with empty locals map
-   */
-  def copyForNewFunction: TypeCheckingContext =
-    copy(locals = mutable.Map.empty)
 
   /**
    * @return a (deep) copy of this
@@ -95,7 +89,7 @@ final case class TypeCheckingContext private(
         .map(tpe => LocalInfo(name, tpe, isReassignable = false, defPos = None, declHasTypeAnnot = false, RootEnvir))
     )
   }
-  
+
   def isInhabitedForSureWhenNoCaptureDescr(shape: TypeShape): Boolean = shape match {
     case RegionType => true
     case NamedTypeShape(typeName) =>
@@ -105,7 +99,7 @@ final case class TypeCheckingContext private(
       }
     case _ => false
   }
-  
+
   def neverNeedsCapDescr(shape: TypeShape): Boolean = shape match {
     case RegionType => false
     case shape: PrimitiveTypeShape => true
@@ -122,6 +116,8 @@ final case class TypeCheckingContext private(
         case NamedTypeShape(typeName) =>
           resolveTypeAs[SelectableSig](typeName).flatMap(_.typeOfSelectIfCapturable(fld))
             .getOrElse(UndefinedTypeShape)
+        case ArrayTypeShape(elemType, modifiable) if modifiable && fld == SpecialFields.regFieldId =>
+          RegionType ^ CaptureSet.singletonOfRoot
         case _ => UndefinedTypeShape
       }
   }
@@ -140,7 +136,7 @@ final case class TypeCheckingContext private(
   }
 
   def deviceIsAllowed(device: Device): Boolean = allowedDevices.contains(device)
-  
+
   def isCurrentFunc(owner: TypeIdentifier, funId: FunOrVarId): Boolean = {
     owner == meTypeId && currentFunIdOpt.contains(funId)
   }
@@ -182,7 +178,7 @@ object TypeCheckingContext {
              allowedPackages: Set[TypeIdentifier],
              allowedDevices: Set[Device]
            ): TypeCheckingContext = {
-    TypeCheckingContext(analysisContext, environment, mutable.Map.empty, meTypeId,
+    new TypeCheckingContext(analysisContext, environment, mutable.Map.empty, meTypeId,
       meCaptureDescr, currFunIdOpt, allowedPackages, allowedDevices)
   }
 

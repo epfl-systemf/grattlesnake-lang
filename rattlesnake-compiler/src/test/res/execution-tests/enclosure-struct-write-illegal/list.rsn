@@ -2,9 +2,9 @@
 interface MutList
 
 struct MutCons : MutList {
-    reg: Region^,
+    rg: Region^,
     var head: Int,
-    tail: MutList^{reg}
+    tail: MutList^{rg}
 }
 
 struct Nil : MutList
@@ -44,10 +44,10 @@ package Lists {
         }
     }
 
-    fn mkList(reg: Region^, xs: arr Int) -> MutList^{reg} {
-        var ls: MutList^{reg} = new Nil();
+    fn mkList(rg: Region^, xs: arr Int) -> MutList^{rg} {
+        var ls: MutList^{rg} = new Nil();
         for var i = #xs-1; i >= 0; i -= 1 {
-            ls = new@reg MutCons(reg, xs[i], ls);
+            ls = new@rg MutCons(rg, xs[i], ls);
         };
         return ls;
     }

@@ -1,0 +1,27 @@
+
+package Main {
+
+    main fn test(arr String){
+        val r = newregion;
+        val a = arr@r Int[10];
+        val fooStruct: Foo^{a.reg} = new@a.reg Foo(42);
+        print(boolToString(a.reg == fooStruct.reg));
+        print(" - ");
+        foo(fooStruct);
+    }
+
+    fn foo(f1: Foo^){
+        val r = newregion;
+        val f2 = new@r Foo(84);
+        print(boolToString(f2.reg == f1.reg));
+    }
+
+}
+
+struct Foo {
+    var i: Int
+}
+
+struct Bar {
+    var f: Foo^{reg}
+}

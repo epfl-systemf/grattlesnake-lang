@@ -13,6 +13,7 @@ enum RuntimeMethod(name: String, mthDescr: String) {
   case PushEnvir extends RuntimeMethod("pushEnvir", "()V")
   case PopEnvir extends RuntimeMethod("popEnvir", "()V")
   case NewRegion extends RuntimeMethod("newRegion", "()I")
+  case RegionOf extends RuntimeMethod("regionOf", "(Ljava/lang/Object;)I")
   
   def generateCall(mv: MethodVisitor)(using AnalysisContext): Unit = {
     mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeClassName, name, mthDescr, false)

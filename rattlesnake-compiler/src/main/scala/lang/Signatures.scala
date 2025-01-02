@@ -40,11 +40,14 @@ sealed trait FunctionsProviderSig extends TypeSignature {
 sealed trait ConstructibleSig extends TypeSignature {
 
   def params: mutable.LinkedHashMap[FunOrVarId, FieldInfo]
+  
+  def regularParams: mutable.LinkedHashMap[FunOrVarId, FieldInfo] =
+    params.filter((id, _) => id != SpecialFields.regFieldId)
 
   def globalCaptures: Set[Capturable]
 
   def voidInitMethodSig: FunctionSignature =
-    FunctionSignature(ConstructorFunId, params.toList.map((id, info) => (Some(id), info.tpe)), VoidType, languageMode)
+    FunctionSignature(ConstructorFunId, regularParams.toList.map((id, info) => (Some(id), info.tpe)), VoidType, languageMode)
 }
 
 sealed trait UserConstructibleSig extends TypeSignature {

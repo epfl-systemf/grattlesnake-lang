@@ -1,5 +1,7 @@
 package identifiers
 
+import lang.Keyword
+
 sealed trait Identifier {
 
   def stringId: String
@@ -24,6 +26,10 @@ final case class BackendGeneratedVarId(private val rawName: String) extends FunO
 
 case object ConstructorFunId extends FunOrVarId {
   override def stringId: String = "<init>"
+}
+
+object SpecialFields {
+  val regFieldId: FunOrVarId = NormalFunOrVarId("reg")
 }
 
 object BackendGeneratedVarId {

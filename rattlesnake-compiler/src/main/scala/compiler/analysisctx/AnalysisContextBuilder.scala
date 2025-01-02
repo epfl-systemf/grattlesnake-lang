@@ -7,13 +7,14 @@ import compiler.reporting.Errors.{Err, ErrorReporter}
 import compiler.reporting.Position
 import compiler.typechecker.SubtypeRelation.subtypeOf
 import compiler.typechecker.{RootEnvir, TypeCheckingContext}
-import identifiers.{FunOrVarId, IntrinsicsPackageId, TypeIdentifier}
+import identifiers.SpecialFields.regFieldId
+import identifiers.{FunOrVarId, IntrinsicsPackageId, SpecialFields, TypeIdentifier}
 import lang.*
 import lang.Capturables.*
 import lang.CaptureDescriptors.{CaptureDescriptor, CaptureSet, Mark}
 import lang.LanguageMode.*
 import lang.Types.*
-import lang.Types.PrimitiveTypeShape.{NothingType, VoidType}
+import lang.Types.PrimitiveTypeShape.{NothingType, RegionType, VoidType}
 
 import scala.collection.mutable
 
@@ -186,19 +187,27 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
   private def buildStructFieldsMap(structDef: StructDef)
                                   (using langMode: LanguageMode): mutable.LinkedHashMap[FunOrVarId, FieldInfo] = {
     val fieldsMap = new mutable.LinkedHashMap[FunOrVarId, FieldInfo]()
+    var hasReassigField = false
     for param <- structDef.fields do {
       param.paramNameOpt match {
         case None =>
           reportError("struct fields must be named", param.getPosition)
+        case Some(paramName) if paramName == regFieldId =>
+          reportError(s"field id $regFieldId is reserved for the region in " +
+            "which the structure is allocated", param.getPosition)
         case Some(paramName) =>
           val tpe = computeType(param.tpe, idsAreFields = true)
           if (checkIsNotVoidOrNothing(tpe, param.getPosition)) {
             if (!fieldsMap.contains(paramName)) {
-              // the absence of duplicate fields will be reported by the type-checker
+              // the presence of duplicate fields will be reported by the type-checker
               fieldsMap.put(paramName, FieldInfo(tpe, param.isReassignable, langMode))
             }
           }
       }
+      hasReassigField |= param.isReassignable
+    }
+    if (hasReassigField && langMode.isOcapEnabled) {
+      fieldsMap.put(regFieldId, FieldInfo(RegionType ^ CaptureSet.singletonOfRoot, isReassignable = false, langMode))
     }
     fieldsMap
   }

@@ -14,6 +14,10 @@ public final class Rattlesnake$runtime {
         objToRegion.put(obj, region);
     }
 
+    public static int regionOf(Object obj){
+        return objToRegion.get(obj);
+    }
+
     // NOTE: This implementation assumes single-threaded execution.
     // A thread-safe runtime should include per-thread capability stacks.
 

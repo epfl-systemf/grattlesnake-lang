@@ -14,14 +14,17 @@ final class PathsSubstitutor(tcCtx: TypeCheckingContext, er: ErrorReporter) {
 
   export substMap.update
   
-  def subst(path: Path): Option[Capturable] = path match {
-    case path: (IdPath | MePath.type) =>
-      substMap.get(path)
-    case SelectPath(directRoot, fld) =>
-      subst(directRoot) match {
-        case Some(substDirectRoot: Path) => Some(substDirectRoot.dot(fld))
+  def subst(path: Path): Option[Capturable] = {
+    substMap.get(path).orElse {
+      path match {
+        case SelectPath(directRoot, fld) =>
+          subst(directRoot) match {
+            case Some(substDirectRoot: Path) => Some(substDirectRoot.dot(fld))
+            case _ => None
+          }
         case _ => None
       }
+    }
   }
 
   def subst(capturable: Capturable, posOpt: Option[Position]): CaptureDescriptor = capturable match {

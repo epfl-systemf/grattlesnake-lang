@@ -372,7 +372,7 @@ final class Backend[V <: ClassVisitor](
     constructorVisitor.visitVarInsn(Opcodes.ALOAD, 0)
     constructorVisitor.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", ConstructorFunId.stringId, "()V", false)
     var varIdx = 1
-    for ((fldName, fldInfo) <- typeSig.params) do {
+    for ((fldName, fldInfo) <- typeSig.regularParams) do {
       val tpe = fldInfo.tpe
       val descr = descriptorForType(tpe.shape)
       constructorVisitor.visitVarInsn(Opcodes.ALOAD, 0)
@@ -667,6 +667,10 @@ final class Backend[V <: ClassVisitor](
           mv.visitInsn(opcode)
         }
       }
+
+      case Select(lhs, SpecialFields.regFieldId) =>
+        generateCode(lhs, ctx)
+        RuntimeMethod.RegionOf.generateCall(mv)
 
       case Select(lhs, selected) =>
         generateCode(lhs, ctx)

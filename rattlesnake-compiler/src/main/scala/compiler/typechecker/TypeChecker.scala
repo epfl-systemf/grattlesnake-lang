@@ -82,7 +82,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
           moduleSig.importedPackages.toSet, moduleSig.importedDevices.toSet, None)
       }
 
-    case StructDef(structName, fields, _, _) =>
+    case structDef@StructDef(structName, fields, _, _) =>
       val structSig = analysisContext.resolveTypeAs[StructSignature](structName).get
       val tcCtx = TypeCheckingContext(
         analysisContext,
@@ -93,6 +93,10 @@ final class TypeChecker(errorReporter: ErrorReporter)
         analysisContext.packages.keySet,
         Device.values.toSet
       )
+      if (structSig.isShallowMutable) {
+        tcCtx.addLocal(SpecialFields.regFieldId, RegionType ^ CaptureSet.singletonOfRoot, structDef.getPosition,
+          isReassignable = false, declHasTypeAnnot = false, () => (), () => ())
+      }
       for (param@Param(paramNameOpt, typeTree, isReassignable) <- fields) {
         val tpe = checkType(typeTree, idsAreFields = true)(using tcCtx, langMode)
         paramNameOpt.foreach { paramName =>
@@ -175,7 +179,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
       if (param.isReassignable && param.paramNameOpt.isEmpty) {
         reportError("unnamed reassignable parameter", param.getPosition, isWarning = true)
       }
-      if (param.isReassignable && paramType.captureDescriptor.coversRoot){
+      if (param.isReassignable && paramType.captureDescriptor.coversRoot) {
         reportError("reassignable parameters are not allowed to capture the root capability", param.getPosition)
       }
     }
@@ -221,7 +225,9 @@ final class TypeChecker(errorReporter: ErrorReporter)
     typeTree match {
       case capTypeTree@CapturingTypeTree(typeShapeTree, captureDescrTree) =>
         featureIsNotAllowedIfOcapDisabled("capturing types", capTypeTree.getPosition)
+
         given ShapeAnnotPosition = InsideCapturingType
+
         val shape = checkTypeShape(typeShapeTree, idsAreFields)
         val descriptor = checkCaptureDescr(captureDescrTree, idsAreFields)
         if (langMode.isOcapEnabled) {
@@ -230,6 +236,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         CapturingType(shape, descriptor)
       case typeShapeTree: TypeShapeTree =>
         given ShapeAnnotPosition = OutsideCapturingType
+
         checkTypeShape(typeShapeTree, idsAreFields)
       case WrapperTypeTree(tpe) => tpe
     }
@@ -356,6 +363,8 @@ final class TypeChecker(errorReporter: ErrorReporter)
                     else Some(lhsPath.dot(selected))
                   }
                 }
+              case ArrayTypeShape(elemType, modifiable) if modifiable =>
+                Some(lhsPath.dot(selected))
               case lhsType => None
             }
           }
@@ -487,7 +496,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
       valueOpt.foreach { value =>
         val retType = checkExpr(value)
         checkSubtypingConstraint(expRetType, retType, retStat.getPosition, "returned value")
-        if (tcCtx.environment.insideEnclosure && !retType.isPure){
+        if (tcCtx.environment.insideEnclosure && !retType.isPure) {
           reportError("cannot return a value of an impure type from inside an enclosure", retStat.getPosition)
         }
       }
@@ -641,14 +650,20 @@ final class TypeChecker(errorReporter: ErrorReporter)
                 regionOpt.get.getPosition
               )
             }
-            checkLangModeCompatibility(s"constructor of struct $tid", structSig.languageMode, instantiation.getPosition)
-            checkCallArgs(structSig, structSig.voidInitMethodSig, None, args, instantiation.getPosition)
+            checkLangModeCompatibility(s"constructor of struct $tid", structSig.languageMode,
+              instantiation.getPosition)
+            checkCallArgs(structSig, structSig.voidInitMethodSig, receiverOpt = None, regionOpt, args,
+              instantiation.getPosition)
             NamedTypeShape(tid) ^ computeCaptures(args, regionOpt, structSig)
           case Some(moduleSig: ModuleSignature) =>
-            checkLangModeCompatibility(s"constructor of module $tid", moduleSig.languageMode, instantiation.getPosition)
-            checkCallArgs(moduleSig, moduleSig.voidInitMethodSig, None, args, instantiation.getPosition)
-            checkImplicitImportsAreAllowed(moduleSig.importedPackages, tcCtx.packageIsAllowed, "package", tid, instantiation.getPosition)
-            checkImplicitImportsAreAllowed(moduleSig.importedDevices, tcCtx.deviceIsAllowed, "device", tid, instantiation.getPosition)
+            checkLangModeCompatibility(s"constructor of module $tid", moduleSig.languageMode,
+              instantiation.getPosition)
+            checkCallArgs(moduleSig, moduleSig.voidInitMethodSig, receiverOpt = None, regionOpt = None, args,
+              instantiation.getPosition)
+            checkImplicitImportsAreAllowed(moduleSig.importedPackages, tcCtx.packageIsAllowed, "package", tid,
+              instantiation.getPosition)
+            checkImplicitImportsAreAllowed(moduleSig.importedDevices, tcCtx.deviceIsAllowed, "device", tid,
+              instantiation.getPosition)
             val pkgCapabilities = moduleSig.importedPackages.map(CapPackage(_)).toSet
             val devicesCapabilities = moduleSig.importedDevices.map(CapDevice(_)).toSet
             NamedTypeShape(tid) ^ computeCaptures(args, regionOpt, moduleSig)
@@ -693,8 +708,12 @@ final class TypeChecker(errorReporter: ErrorReporter)
         }
 
       case select@Select(lhs, selected) =>
-        val lhsType = checkExpr(lhs)
-        checkFieldAccess(lhs, selected, select.getPosition, mustUpdateField = false)
+        checkExpr(lhs).shape match {
+          case ArrayTypeShape(elemType, modifiable) if modifiable && selected == SpecialFields.regFieldId =>
+            RegionType ^ CaptureSet.singletonOfRoot
+          case _ =>
+            checkFieldAccess(lhs, selected, select.getPosition, mustUpdateField = false)
+        }
 
       case ternary@Ternary(cond, thenBr, elseBr) =>
         val condType = checkExpr(cond)
@@ -713,7 +732,9 @@ final class TypeChecker(errorReporter: ErrorReporter)
 
       case cast@Cast(expr, typeTree) =>
         val exprType = checkExpr(expr)
+
         given ShapeAnnotPosition = InTypeTest
+
         val targetType = checkCastTargetTypeShape(typeTree)
         val castTypeShape = if (exprType.shape.subtypeOf(targetType)) {
           reportError(s"useless conversion: '${exprType.shape}' --> '$targetType'", cast.getPosition, isWarning = true)
@@ -730,7 +751,9 @@ final class TypeChecker(errorReporter: ErrorReporter)
 
       case typeTest@TypeTest(expr, typeTree) =>
         val exprType = checkExpr(expr)
+
         given ShapeAnnotPosition = InTypeTest
+
         val targetType = checkCastTargetTypeShape(typeTree)
         if (exprType.shape.subtypeOf(targetType)) {
           reportError(s"test will always be true, as '${exprType.shape}' is a subtype of '$targetType'",
@@ -787,7 +810,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
   }
 
   private def requireAndCheckRegionIffOcapEnabled(regionOpt: Option[Expr], posOpt: Option[Position], isMutableObj: Boolean)
-                                         (using ctx: TypeCheckingContext, langMode: LanguageMode): Unit = {
+                                                 (using ctx: TypeCheckingContext, langMode: LanguageMode): Unit = {
     regionOpt.foreach(checkExpr)
     (regionOpt, langMode) match {
       case (None, OcapDisabled) => ()
@@ -839,7 +862,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
           else Some(MeRef().setType(tcCtx.meType))
         }
         checkLangModeCompatibility(s"function $funName", funSig.languageMode, call.getPosition)
-        checkCallArgs(ownerSig, funSig, someReceiver, args, pos)
+        checkCallArgs(ownerSig, funSig, someReceiver, regionOpt = None, args, pos)
       case ModuleNotFound =>
         args.foreach(checkExpr)
         reportError(s"not found: package or module $owner", pos)
@@ -908,6 +931,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
                              funOwnerSig: TypeSignature,
                              funSig: FunctionSignature,
                              receiverOpt: Option[Expr],
+                             regionOpt: Option[Expr],
                              args: List[Expr],
                              callPos: Option[Position]
                            )(using callerCtx: TypeCheckingContext, callerLangMode: LanguageMode): Type = {
@@ -922,12 +946,22 @@ final class TypeChecker(errorReporter: ErrorReporter)
       callerCtx.analysisContext.packages.keySet,
       Device.values.toSet
     )
+    regionOpt.foreach { region =>
+      calleeCtx.addLocal(SpecialFields.regFieldId, RegionType ^ CaptureSet.singletonOfRoot,
+        defPos = None, isReassignable = false, declHasTypeAnnot = false, () => (), () => ())
+    }
     val substitutor = PathsSubstitutor(calleeCtx, errorReporter)
     for {
       receiver <- receiverOpt
       receiverPath <- convertToCapturable(receiver, erOpt = None, idsAreFields = false)
     } do {
       substitutor(MePath) = receiverPath
+    }
+    for {
+      region <- regionOpt
+      regionPath <- convertToCapturable(region, erOpt = None, idsAreFields = false)
+    } do {
+      substitutor(MePath.dot(SpecialFields.regFieldId)) = regionPath
     }
     var errorFound = false
     while (expTypesIter.hasNext && argsIter.hasNext && !errorFound) {
@@ -938,6 +972,10 @@ final class TypeChecker(errorReporter: ErrorReporter)
       if (!actType.subtypeOf(expTypeSubst)) {
         reportError(s"expected '$expTypeSubst', found '$actType'", arg.getPosition)
         errorFound = true
+      }
+      paramNameOpt.foreach { paramName =>
+        calleeCtx.addLocal(paramName, expTypeSubst, defPos = None, isReassignable = false,
+          declHasTypeAnnot = true, () => (), () => ())
       }
       for {
         paramName <- paramNameOpt
@@ -961,8 +999,8 @@ final class TypeChecker(errorReporter: ErrorReporter)
 
   private def computeCaptures(args: List[Expr], regionOpt: Option[Expr], sig: ConstructibleSig)
                              (using TypeCheckingContext): CaptureDescriptor = {
-    val paramsIter = sig.params.iterator
-    args.foldLeft[CaptureDescriptor](CaptureSet(sig.globalCaptures: Set[Capturable])){ (cd, arg) =>
+    val paramsIter = sig.regularParams.iterator
+    args.foldLeft[CaptureDescriptor](CaptureSet(sig.globalCaptures: Set[Capturable])) { (cd, arg) =>
       cd.union(
         paramsIter.nextOption().map { (fieldId, fieldInfo) =>
           if fieldInfo.isReassignable
