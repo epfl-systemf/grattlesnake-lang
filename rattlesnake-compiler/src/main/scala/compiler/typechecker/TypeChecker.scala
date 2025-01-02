@@ -637,9 +637,8 @@ final class TypeChecker(errorReporter: ErrorReporter)
               )
             } else if (langMode.isOcapEnabled && !structSig.isShallowMutable && regionOpt.isDefined) {
               reportError(
-                s"providing a region is not necessary here, as ${structSig.id} does not have reassignable fields",
-                regionOpt.get.getPosition,
-                isWarning = true
+                s"${structSig.id} does not have reassignable fields, hence it should not be associated with a region",
+                regionOpt.get.getPosition
               )
             }
             checkLangModeCompatibility(s"constructor of struct $tid", structSig.languageMode, instantiation.getPosition)
@@ -959,7 +958,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
     }
     substitutor.subst(funSig.retTypeForMode(callerLangMode), callPos)
   }
-    
+
   private def computeCaptures(args: List[Expr], regionOpt: Option[Expr], sig: ConstructibleSig)
                              (using TypeCheckingContext): CaptureDescriptor = {
     val paramsIter = sig.params.iterator
