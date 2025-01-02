@@ -973,12 +973,6 @@ final class TypeChecker(errorReporter: ErrorReporter)
     }
   }
 
-  /**
-   * @param alwaysStopped indicates whether the control-flow can reach the end of the considered construct without
-   *                      encountering an instruction that terminates the function (`return` or `panic`)
-   */
-  private case class EndStatus(alwaysStopped: Boolean)
-
   private def typeOfLocalOrConst(name: FunOrVarId, ctx: TypeCheckingContext, posOpt: Option[Position]): Type = {
     ctx.getLocalOrConst(name) match
       case None =>
