@@ -1,5 +1,6 @@
 package compiler
 
+import compiler.TestRuntimePaths.{agentTargetDirPath, runtimeTargetDirPath}
 import compiler.gennames.{ClassesAndDirectoriesNames, FileExtensions}
 import compiler.io.SourceFile
 import compiler.pipeline.TasksPipelines
@@ -90,7 +91,8 @@ class ReflectionBasedExecutionTests {
   private def compileAndLoadClasses(srcFileName: String): Seq[Class[?]] = {
     val tmpDir = Path.of(tmpTestDir, srcFileName)
     val errorReporter = new ErrorReporter(errorsConsumer = System.err.print, exit = failExit)
-    val compiler = TasksPipelines.compiler(tmpDir, javaVersionCode, errorReporter)
+    val compiler = TasksPipelines.compiler(tmpDir, javaVersionCode,
+      runtimeTargetDirPath, agentTargetDirPath, errorReporter)
     val testFile = SourceFile(s"$srcDir/$srcFileName.${FileExtensions.rattlesnake}")
     val writtenFilesPaths = compiler.apply(List(testFile))
     val classes = {

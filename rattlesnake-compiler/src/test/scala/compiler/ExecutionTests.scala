@@ -1,6 +1,7 @@
 package compiler
 
 import compiler.ExecutionTests.*
+import compiler.TestRuntimePaths.{agentTargetDirPath, runtimeTargetDirPath}
 import compiler.gennames.FileExtensions
 import compiler.io.SourceFile
 import compiler.pipeline.TasksPipelines
@@ -13,7 +14,7 @@ import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 import org.objectweb.asm.Opcodes.V1_8
 
-import java.io.InputStream
+import java.io.{File, InputStream}
 import java.nio.file.{Files, Path, Paths}
 import java.util.Comparator
 import scala.io.Source
@@ -61,7 +62,7 @@ class ExecutionTests(programDirName: String) {
 
     val writtenFilePaths = try {
       TasksPipelines
-        .compiler(testOutSubdirPath, javaVersionCode, er)
+        .compiler(testOutSubdirPath, javaVersionCode, runtimeTargetDirPath, agentTargetDirPath, er)
         .apply(srcFiles)
     } catch {
       case e: Throwable =>

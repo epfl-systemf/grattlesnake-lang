@@ -28,9 +28,11 @@ object TasksPipelines {
   def compiler(
                 outputDirectoryPath: Path,
                 javaVersionCode: Int,
+                runtimeDirPath: Path,
+                agentDirPath: Path,
                 er: ErrorReporter = defaultErrorReporter
               ): CompilerStep[List[SourceCodeProvider], List[Path]] = {
-    compilerImpl(outputDirectoryPath, Backend.BinaryMode, javaVersionCode, er)
+    compilerImpl(outputDirectoryPath, Backend.BinaryMode, javaVersionCode, runtimeDirPath, agentDirPath, er)
   }
 
   /**
@@ -39,9 +41,11 @@ object TasksPipelines {
   def bytecodeWriter(
                       outputDirectoryPath: Path,
                       javaVersionCode: Int,
+                      runtimeDirPath: Path,
+                      agentDirPath: Path,
                       er: ErrorReporter = defaultErrorReporter
                     ): CompilerStep[List[SourceCodeProvider], List[Path]] = {
-    compilerImpl(outputDirectoryPath, Backend.AssemblyMode, javaVersionCode, er)
+    compilerImpl(outputDirectoryPath, Backend.AssemblyMode, javaVersionCode, runtimeDirPath, agentDirPath, er)
   }
 
   /**
@@ -97,6 +101,8 @@ object TasksPipelines {
   private def compilerImpl[V <: ClassVisitor](outputDirectoryPath: Path,
                                               backendMode: Backend.Mode[V],
                                               javaVersionCode: Int,
+                                              runtimeDirPath: Path,
+                                              agentDirPath: Path,
                                               er: ErrorReporter) = {
     MultiStep(frontend(er))
       .andThen(frontAnalyzer(er))
@@ -106,7 +112,9 @@ object TasksPipelines {
         backendMode,
         er,
         outputDirectoryPath,
-        javaVersionCode
+        javaVersionCode,
+        runtimeDirPath,
+        agentDirPath
       ))
   }
 

@@ -38,26 +38,10 @@ final class Backend[V <: ClassVisitor](
                                         mode: Backend.Mode[V],
                                         errorReporter: ErrorReporter,
                                         outputDirBase: Path,
-                                        javaVersionCode: Int
+                                        javaVersionCode: Int,
+                                        runtimeDirPath: Path,
+                                        agentDirPath: Path
                                       ) extends CompilerStep[(List[Source], AnalysisContext), List[Path]] {
-
-  // TODO write in the class the information whether the file has been statically capture-checked or not
-
-  private val rattlesnakeRootDir =
-    new File("")
-      .getCanonicalFile
-      .getParentFile
-      .toPath
-
-  private val runtimeTargetDirPath =
-    rattlesnakeRootDir
-      .resolve("rattlesnake-runtime")
-      .resolve("target")
-
-  private val agentTargetDirPath =
-    rattlesnakeRootDir
-      .resolve("rattlesnake-agent")
-      .resolve("target")
 
   private var lastWrittenLine = -1
 
@@ -105,8 +89,8 @@ final class Backend[V <: ClassVisitor](
       }
 
       if (mode.generateRuntime) {
-        copyJar(runtimeTargetDirPath, "rattlesnake-runtime", outputDirPath)
-        copyJar(agentTargetDirPath, "rattlesnake-agent", outputDirPath.resolve(agentSubdirName))
+        copyJar(runtimeDirPath, "rattlesnake-runtime", outputDirPath)
+        copyJar(agentDirPath, "rattlesnake-agent", outputDirPath.resolve(agentSubdirName))
       }
 
       errorReporter.displayAndTerminateIfErrors()

@@ -110,7 +110,6 @@ object Main {
         cmd match {
           case "run" => (Run(argsMap), files)
           case "compile" => (Compile(argsMap), files)
-          case "asm" => (Asm(argsMap), files)
           case "format" => (Format(argsMap), files)
           case "typecheck" => (TypeCheck(argsMap), files)
           case "lower" => (Lower(argsMap), files)
@@ -166,6 +165,10 @@ object Main {
   private def getJavaVersionArg(argsMap: MutArgsMap): Int = {
     parseJavaVersion(getValuedArg("java-version", argsMap, Some(java8Tag)))
   }
+  
+  private def getRuntimeDirArg(argsMap: MutArgsMap): Path = {
+    Paths.get(getValuedArg("runtime", argsMap, Some(".")))
+  }
 
   private def getIndentGranularityArg(argsMap: MutArgsMap): Int = {
     val argStr = getValuedArg("indent", argsMap, Some("2"))
@@ -201,10 +204,9 @@ object Main {
   private case class Run(argsMap: MutArgsMap) extends Action {
     override def run(sources: List[SourceCodeProvider]): Unit = {
       val outDirBasePath = getOutDirBaseArg(argsMap)
-      val compiler = TasksPipelines.compiler(
-        outDirBasePath,
-        getJavaVersionArg(argsMap)
-      )
+      val javaVersion = getJavaVersionArg(argsMap)
+      val runtimeDir = getRuntimeDirArg(argsMap)
+      val compiler = TasksPipelines.compiler(outDirBasePath, javaVersion, runtimeDir, runtimeDir)
       val programArgs = getProgramArgsArg(argsMap)
       reportUnknownArgsIfAny(argsMap)
       val writtenFilesPaths = compiler.apply(sources)
@@ -224,27 +226,12 @@ object Main {
    */
   private case class Compile(argsMap: MutArgsMap) extends Action {
     override def run(sources: List[SourceCodeProvider]): Unit = {
-      val compiler = TasksPipelines.compiler(
-        getOutDirBaseArg(argsMap),
-        getJavaVersionArg(argsMap)
-      )
+      val outDirBase = getOutDirBaseArg(argsMap)
+      val javaVersion = getJavaVersionArg(argsMap)
+      val runtimeDir = getRuntimeDirArg(argsMap)
+      val compiler = TasksPipelines.compiler(outDirBase, javaVersion, runtimeDir, runtimeDir)
       reportUnknownArgsIfAny(argsMap)
       val cnt = compiler.apply(sources).size
-      succeed(s"wrote $cnt file(s)")
-    }
-  }
-
-  /**
-   * ASM command (generate JVM bytecode as a text file)
-   */
-  private case class Asm(argsMap: MutArgsMap) extends Action {
-    override def run(sources: List[SourceCodeProvider]): Unit = {
-      val bytecodeWriter = TasksPipelines.bytecodeWriter(
-        getOutDirBaseArg(argsMap),
-        getJavaVersionArg(argsMap)
-      )
-      reportUnknownArgsIfAny(argsMap)
-      val cnt = bytecodeWriter.apply(sources).size
       succeed(s"wrote $cnt file(s)")
     }
   }
@@ -332,13 +319,12 @@ object Main {
          |run: compile and run the program
          | args: -out-dir=...: required, directory where to write the output file
          |       -java-version=...: optional, can be '$java8Tag', '$java11Tag' or '$java17Tag' (default is '$java8Tag')
+         |       -runtime=...: optional, directory containing the runtime and agent jars (default is current dir)
          |       -args=[...]: optional, arguments to be passed to the executed program (e.g. -args=[foo bar baz])
          |compile: compile the program
          | args: -out-dir=...: required, directory where to write the output file
          |       -java-version=...: optional, can be '$java8Tag', '$java11Tag' or '$java17Tag' (default is '$java8Tag')
-         |asm: write JVM bytecode instructions to a text file
-         | args: -out-dir=...: required, directory where to write the output file
-         |       -java-version=...: optional, can be '$java8Tag', '$java11Tag' or '$java17Tag' (default is '$java8Tag')
+         |       -runtime=...: optional, directory containing the runtime and agent jars (default is current dir)
          |format: reformat file
          | args: -out-dir=...: required, directory where to write the output file
          |       -out-file=...: optional, output file name (by default same as input)
