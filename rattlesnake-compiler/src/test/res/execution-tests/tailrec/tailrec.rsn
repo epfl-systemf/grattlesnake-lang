@@ -4,7 +4,8 @@ const c_array_size = 100000;
 package Main {
 
     fn testF() -> Int {
-        val array = generateArray();
+        val r = newregion;
+        val array = generateArray(r);
         return max(array);
     }
 
@@ -30,8 +31,8 @@ package Main {
         }
     }
 
-    fn generateArray() -> arr^ Int {
-        val array = arr@newregion Int[c_array_size];
+    fn generateArray(reg: Region^) -> arr^{reg} Int {
+        val array = arr@reg Int[c_array_size];
         var a = 278;
         var b = -515;
         for var i = 0; i < c_array_size; i += 1 {

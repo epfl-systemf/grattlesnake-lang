@@ -99,6 +99,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
       }
       for (param@Param(paramNameOpt, typeTree, isReassignable) <- fields) {
         val tpe = checkType(typeTree, idsAreFields = true)(using tcCtx, langMode)
+        restrictRootCaptures(tpe, param.getPosition, isReassignable, "struct field")
         paramNameOpt.foreach { paramName =>
           tcCtx.addLocal(paramName, tpe, param.getPosition, isReassignable, declHasTypeAnnot = true,
             duplicateVarCallback = { () =>
@@ -108,10 +109,6 @@ final class TypeChecker(errorReporter: ErrorReporter)
               reportError(s"field $paramName has type $tpe, which is forbidden", param.getPosition)
             }
           )
-        }
-        if (param.isReassignable) {
-          typeShouldNotCaptureRoot(tpe, s"reassignable field '${param.paramNameOpt.getOrElse("<missing name>")}' " +
-            "cannot capture the root capability", tcCtx, param.getPosition)
         }
       }
 
@@ -138,12 +135,22 @@ final class TypeChecker(errorReporter: ErrorReporter)
       }
   }
 
-  private def typeShouldNotCaptureRoot(tpe: Type, msg: String, tcCtx: TypeCheckingContext, posOpt: Option[Position]) = {
-    tpe.captureDescriptor match {
-      case cs: CaptureSet if RootCapability.isCoveredBy(cs)(using tcCtx) =>
-        reportError(msg, posOpt)
+  private def restrictRootCaptures(tpe: Type, posOpt: Option[Position], isReassignable: Boolean, typePosDescr: String): Unit = {
+    tpe match {
+      case CapturingType(shape, captureDescriptor) if captureDescriptor.coversRoot =>
+        if (isReassignable){
+          reportError("vars are not allowed to capture the root capability", posOpt)
+        } else if (!isFirstGenerationCapability(shape)) {
+          reportError(s"type $tpe is not allowed in $typePosDescr position, as it captures the root capability", posOpt)
+        }
       case _ => ()
     }
+  }
+
+  private def isFirstGenerationCapability(shape: TypeShape): Boolean = shape match {
+    case RegionType => true
+    case NamedTypeShape(id) => Device.devicesTypes.contains(id)
+    case _ => false
   }
 
   private def checkFunction(
@@ -185,6 +192,10 @@ final class TypeChecker(errorReporter: ErrorReporter)
     }
     val optRetType = optRetTypeTree.map(checkType(_, idsAreFields = false)(using tcCtx, langMode))
     val expRetType = optRetType.getOrElse(VoidType)
+    restrictRootCaptures(expRetType, funDef.getPosition, isReassignable = false, "function result")
+    if (expRetType.shape == RegionType){
+      reportError("functions are not allowed to return a region", funDef.getPosition)
+    }
     checkStat(body)(using tcCtx, langMode, expRetType)
     tcCtx.writeLocalsRelatedWarnings(errorReporter)
   }
@@ -205,6 +216,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
   private def checkImport(imp: Import, tcCtx: TypeCheckingContext, langMode: LanguageMode): Unit = imp match {
     case modImp@ParamImport(paramName, paramType) =>
       val tpe = checkType(paramType, idsAreFields = true)(using tcCtx, langMode)
+      restrictRootCaptures(tpe, modImp.getPosition, isReassignable = false, "module import")
       tcCtx.addLocal(paramName, tpe, modImp.getPosition, isReassignable = false, declHasTypeAnnot = true,
         duplicateVarCallback = { () =>
           reportError(s"duplicated parameter: $paramName", modImp.getPosition)
@@ -277,8 +289,9 @@ final class TypeChecker(errorReporter: ErrorReporter)
                              shapePos: ShapeAnnotPosition): TypeShape = typeShapeTree match {
     case ArrayTypeShapeTree(elemTypeTree, isModifiable) =>
       val elemType = checkType(elemTypeTree, idsAreFields)
-      typeShouldNotCaptureRoot(elemType, "array elements are not allowed to capture the root capability",
-        tcCtx, elemTypeTree.getPosition)
+      if (elemType.captureDescriptor.coversRoot){
+        reportError("array elements are not allowed to capture the root capability", typeShapeTree.getPosition)
+      }
       ArrayTypeShape(elemType, isModifiable)
     case castTargetTypeShapeTree: CastTargetTypeShapeTree =>
       checkCastTargetTypeShape(castTargetTypeShapeTree)
@@ -404,10 +417,8 @@ final class TypeChecker(errorReporter: ErrorReporter)
         else optAnnotType.orElse(inferredTypeOpt).getOrElse {
           reportError(s"Please provide a type for uninitialized local $localName", localDef.getPosition)
         }
-      if (isReassignable && actualType.captureDescriptor.coversRoot) {
-        reportError(s"illegal capture set: var '$localName' has type $actualType, which captures the root",
-          localDef.getPosition)
-      }
+      restrictRootCaptures(actualType, localDef.getPosition, isReassignable,
+        if isReassignable then "local var" else "local val")
       localDef.setVarType(actualType)
       tcCtx.addLocal(localName, actualType, localDef.getPosition, isReassignable,
         declHasTypeAnnot = optTypeAnnotTree.isDefined,
@@ -890,23 +901,12 @@ final class TypeChecker(errorReporter: ErrorReporter)
   private def checkUnboxedCaptureDescr(captureDescriptor: CaptureDescriptor, posOpt: Option[Position])
                                       (using tcCtx: TypeCheckingContext): Unit = {
     captureDescriptor match
-      case CaptureDescriptors.Mark =>
-        if (!tcCtx.environment.insideEnclosure) {
-          reportError(s"type cannot be unboxed, as it captures '$Mark'", posOpt)
-        }
+      case Mark => ()
       case CaptureSet(set) =>
-        set.foreach {
-          case path: Path =>
-            path.root match {
-              case IdPath(id) =>
-                if (tcCtx.getLocalOnly(id).isEmpty) {
-                  reportError(s"type cannot be unboxed: '$id' is not defined in current scope", posOpt)
-                }
-              case MePath => ()
-            }
-          case RootCapability =>
-            reportError(s"type cannot be unboxed, as it captures the root capability", posOpt)
-          case _: (CapPackage | CapDevice) => ()
+        for c <- set do {
+          if (!tcCtx.environment.allowsCapturable(c)){
+            reportError(s"unboxing impossible, as unboxed type captures $c", posOpt)
+          }
         }
   }
 

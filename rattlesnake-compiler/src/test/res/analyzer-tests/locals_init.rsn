@@ -14,8 +14,7 @@ package Test {
         print(intToString(t));
     }
 
-    fn bar(b1: Bool, b2: Bool) -> R^ {
-        val r = newregion;
+    fn bar(r: Region^, b1: Bool, b2: Bool) -> R^{r} {
         if b1 {
             val result: R^{r};
             if b2 {

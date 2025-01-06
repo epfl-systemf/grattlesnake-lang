@@ -14,7 +14,8 @@ package Test {
     }
 
     main fn m(arr String){
-        val a = arr@newregion Int[2];
+        val reg = newregion;
+        val a = arr@reg Int[2];
         func(a);
         print(intToString(a[0]) + "\n" + intToString(a[1]));
     }

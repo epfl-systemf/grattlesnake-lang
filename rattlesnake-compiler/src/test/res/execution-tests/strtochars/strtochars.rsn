@@ -2,12 +2,11 @@
 package Test {
 
     main fn testFunc(arr String) {
-        printArrayWeird(toCharsArray("Rattlesnake"))
+        printArrayWeird(toCharsArray("Rattlesnake", newregion))
     }
 
-    fn toCharsArray(s: String) -> arr^ Char {
-        val r = newregion;
-        val array = arr@r Char[#s];
+    fn toCharsArray(s: String, arrReg: Region^) -> arr^{arrReg} Char {
+        val array = arr@arrReg Char[#s];
         for var i = 0; i < #s; i += 1 {
             array[i] = s[i];
         };

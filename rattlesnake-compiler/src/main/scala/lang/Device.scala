@@ -20,4 +20,6 @@ object Device {
   
   val kwToDevice: Map[Keyword, Device] = values.map(d => d.keyword -> d).toMap
   
+  val devicesTypes: Set[TypeIdentifier] = values.map(_.typeName).toSet
+  
 }

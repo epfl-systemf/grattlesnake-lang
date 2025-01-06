@@ -1,16 +1,13 @@
 
 package Main {
 
-    fn mkBar() -> Bar^ {
-        val r = newregion;
+    fn mkBar(r: Region^) -> Bar^{r} {
         val f = new@r Foo(10);
         val b = new@r Bar(f);
         return b
     }
 
-    fn mkBarBad() -> Bar^ {
-        val r = newregion;
-        val s = newregion;
+    fn mkBarBad(r: Region^, s: Region^) -> Bar^{r, s} {
         val f = new@r Foo(10);
         val b = new@s Bar(f);   //> E : expected 'Foo^{s}', found 'Foo^{r}'
         return b

@@ -38,7 +38,8 @@ module Sorting(package Arrays) {
 package Main {
 
     main fn selectionSort(arr String) {
-        val array = [12, 25, -11, 47, 21, 9, 37, 64, 78, 95, 87, 32, 40, 31, 90]@newregion;
+        val r = newregion;
+        val array = [12, 25, -11, 47, 21, 9, 37, 64, 78, 95, 87, 32, 40, 31, 90]@r;
         val s = new Sorting();
         s.selectionSort(array);
         printArray(array);
