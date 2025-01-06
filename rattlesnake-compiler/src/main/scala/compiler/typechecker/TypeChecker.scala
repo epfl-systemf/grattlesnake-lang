@@ -665,13 +665,13 @@ final class TypeChecker(errorReporter: ErrorReporter)
             checkLangModeCompatibility(s"constructor of struct $tid", structSig.languageMode,
               instantiation.getPosition)
             checkCallArgs(structSig, structSig.voidInitMethodSig, receiverOpt = None, regionOpt, args,
-              instantiation.getPosition)
+              isInstantiation = true, instantiation.getPosition)
             NamedTypeShape(tid) ^ computeCaptures(args, regionOpt, structSig)
           case Some(moduleSig: ModuleSignature) =>
             checkLangModeCompatibility(s"constructor of module $tid", moduleSig.languageMode,
               instantiation.getPosition)
             checkCallArgs(moduleSig, moduleSig.voidInitMethodSig, receiverOpt = None, regionOpt = None, args,
-              instantiation.getPosition)
+              isInstantiation = true, instantiation.getPosition)
             checkImplicitImportsAreAllowed(moduleSig.importedPackages, tcCtx.packageIsAllowed, "package", tid,
               instantiation.getPosition)
             checkImplicitImportsAreAllowed(moduleSig.importedDevices, tcCtx.deviceIsAllowed, "device", tid,
@@ -876,7 +876,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
           else Some(MeRef().setType(tcCtx.meType))
         }
         checkLangModeCompatibility(s"function $funName", funSig.languageMode, call.getPosition)
-        checkCallArgs(ownerSig, funSig, someReceiver, regionOpt = None, args, pos)
+        checkCallArgs(ownerSig, funSig, someReceiver, regionOpt = None, args, isInstantiation = false, pos)
       case ModuleNotFound =>
         args.foreach(checkExpr)
         reportError(s"not found: package or module $owner", pos)
@@ -936,6 +936,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
                              receiverOpt: Option[Expr],
                              regionOpt: Option[Expr],
                              args: List[Expr],
+                             isInstantiation: Boolean,
                              callPos: Option[Position]
                            )(using callerCtx: TypeCheckingContext, callerLangMode: LanguageMode): Type = {
     val expTypesIter = funSig.argsForMode(callerLangMode).iterator
@@ -984,7 +985,8 @@ final class TypeChecker(errorReporter: ErrorReporter)
         paramName <- paramNameOpt
         argPath <- convertToCapturable(arg, erOpt = None, idsAreFields = false)
       } do {
-        substitutor(IdPath(paramName)) = argPath
+        val target = if isInstantiation then MePath.dot(paramName) else IdPath(paramName)
+        substitutor(target) = argPath
       }
     }
     if (expTypesIter.hasNext && !errorFound) {
