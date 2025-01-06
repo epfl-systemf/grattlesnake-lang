@@ -15,9 +15,9 @@ final class Runner(errorCallback: String => Nothing, workingDirectoryPath: Path)
   def runMain(mainClassName: String, inheritIO: Boolean): Process = {
     val outDirPath = workingDirectoryPath.resolve(outDirName)
     val agentSubdirPath = outDirPath.resolve(agentSubdirName)
-    val agentJarName = findNameOfJarInDir(agentSubdirPath.toFile, "Rattlesnake-agent",
+    val agentJarName = findNameOfJarInDir(agentSubdirPath.toFile, "rattlesnake-agent",
       "Rattlesnake agent not found")
-    val runtimeJarName = findNameOfJarInDir(outDirPath.toFile, "Rattlesnake-runtime",
+    val runtimeJarName = findNameOfJarInDir(outDirPath.toFile, "rattlesnake-runtime",
       "Rattlesnake runtime not found")
     val agentJarFullPath = agentSubdirPath.resolve(agentJarName).toFile.getCanonicalFile
     val runtimeJarFullPath = outDirPath.resolve(runtimeJarName).toFile.getCanonicalFile

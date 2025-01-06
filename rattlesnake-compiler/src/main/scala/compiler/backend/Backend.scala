@@ -105,8 +105,8 @@ final class Backend[V <: ClassVisitor](
       }
 
       if (mode.generateRuntime) {
-        copyJar(runtimeTargetDirPath, "Rattlesnake-runtime", outputDirPath)
-        copyJar(agentTargetDirPath, "Rattlesnake-agent", outputDirPath.resolve(agentSubdirName))
+        copyJar(runtimeTargetDirPath, "rattlesnake-runtime", outputDirPath)
+        copyJar(agentTargetDirPath, "rattlesnake-agent", outputDirPath.resolve(agentSubdirName))
       }
 
       errorReporter.displayAndTerminateIfErrors()
