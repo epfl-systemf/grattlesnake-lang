@@ -611,7 +611,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         checkSubtypingConstraint(IntType, argType, indexing.getPosition, "array index")
         val elemType = exprMustBeIndexable(indexed.getType, tcCtx, indexed.getPosition, allowString = true)
         checkUnboxedType(elemType, indexing.getPosition)
-        elemType
+        elemType.propagateMarkOf(indexedType)
 
       case arrayInit@ArrayInit(regionOpt, elemTypeTree, size) =>
         if (elemTypeTree == VoidType || elemTypeTree == NothingType) {
@@ -720,12 +720,14 @@ final class TypeChecker(errorReporter: ErrorReporter)
         }
 
       case select@Select(lhs, selected) =>
-        checkExpr(lhs).shape match {
+        val lhsType = checkExpr(lhs)
+        val selectType = lhsType.shape match {
           case ArrayTypeShape(elemType) if selected == SpecialFields.regFieldId =>
             RegionType ^ CaptureSet.singletonOfRoot
           case _ =>
             checkFieldAccess(lhs, selected, select.getPosition, mustUpdateField = false)
         }
+        selectType.propagateMarkOf(lhs.getType)
 
       case ternary@Ternary(cond, thenBr, elseBr) =>
         val condType = checkExpr(cond)
