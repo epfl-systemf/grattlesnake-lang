@@ -71,7 +71,8 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
         if structDef.isInterface
         then Some(mutable.LinkedHashSet.empty[TypeIdentifier])
         else None
-      val sig = StructSignature(name, fieldsMap, structDef.directSupertypes, directSubtypesOpt, langMode)
+      val sig = StructSignature(name, structDef.isShallowMutable, fieldsMap, structDef.directSupertypes, 
+        directSubtypesOpt, langMode)
       structs.put(name, (sig, structDef.getPosition))
     }
   }
@@ -187,7 +188,6 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
   private def buildStructFieldsMap(structDef: StructDef)
                                   (using langMode: LanguageMode): mutable.LinkedHashMap[FunOrVarId, FieldInfo] = {
     val fieldsMap = new mutable.LinkedHashMap[FunOrVarId, FieldInfo]()
-    var hasReassigField = false
     for param <- structDef.fields do {
       param.paramNameOpt match {
         case None =>
@@ -204,9 +204,8 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
             }
           }
       }
-      hasReassigField |= param.isReassignable
     }
-    if (hasReassigField && langMode.isOcapEnabled) {
+    if (structDef.isShallowMutable && langMode.isOcapEnabled) {
       fieldsMap.put(regFieldId, FieldInfo(RegionType ^ CaptureSet.singletonOfRoot, isReassignable = false, langMode))
     }
     fieldsMap
@@ -261,6 +260,9 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
             reportError("only interfaces defined in the same source file can be used as supertypes", structDefPosOpt)
           } else {
             directSupertypeSig.directSubtypesOpt.foreach(_.add(structId))
+          }
+          if (!structSig.isShallowMutable && directSupertypeSig.isShallowMutable){
+            reportError(s"immutable $structId cannot be a subtype of mutable $directSupertypeId", structDefPosOpt)
           }
           if (directSupertypeSig.isInterface) {
             // TODO carefully check what happens here

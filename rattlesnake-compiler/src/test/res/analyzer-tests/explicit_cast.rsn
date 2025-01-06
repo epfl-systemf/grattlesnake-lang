@@ -1,10 +1,10 @@
 #nocap;
 
-interface Super {
+mut interface Super {
     var x: Int
 }
 
-struct Sub : Super {
+mut struct Sub : Super {
     var x: Int,
     y: String
 }

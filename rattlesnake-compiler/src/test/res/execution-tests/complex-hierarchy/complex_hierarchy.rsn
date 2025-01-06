@@ -1,20 +1,20 @@
 
-interface Tree {
+mut interface Tree {
     var value: Int
 }
 
-struct Fork : Tree {
+mut struct Fork : Tree {
     r: Region^,
     var left: Tree^{r},
     var value: Int,
     var right: Tree^{r}
 }
 
-struct Leaf : Tree {
+mut struct Leaf : Tree {
     var value: Int
 }
 
-interface Cell {
+mut interface Cell {
     var value: Int
 }
 
@@ -22,16 +22,16 @@ interface MemoInit {
     initValue: Int
 }
 
-interface MemoLast {
+mut interface MemoLast {
     var lastValue: Int
 }
 
-interface MemoLastAndInit : MemoLast, MemoInit {
+mut interface MemoLastAndInit : MemoLast, MemoInit {
     initValue: Int,
     var lastValue: Int
 }
 
-interface CellWithMemoLastAndInit : Cell, MemoLastAndInit {
+mut interface CellWithMemoLastAndInit : Cell, MemoLastAndInit {
     var value: Int,
     initValue: Int,
     var lastValue: Int
@@ -46,18 +46,18 @@ interface TreeCell {
     tree: Tree^{r}
 }
 
-struct SimpleCell : Cell {
+mut struct SimpleCell : Cell {
     var value: Int
 }
 
-struct CellWithMemoLastInitAndMsg : CellWithMemoLastAndInit, Messageable {
+mut struct CellWithMemoLastInitAndMsg : CellWithMemoLastAndInit, Messageable {
     var value: Int,
     initValue: Int,
     var lastValue: Int,
     msg: String
 }
 
-struct CellWithTree : Cell, TreeCell {
+mut struct CellWithTree : Cell, TreeCell {
     var value: Int,
     r: Region^,
     tree: Leaf^{r}

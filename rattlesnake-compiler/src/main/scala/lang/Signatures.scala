@@ -114,6 +114,7 @@ final case class PackageSignature(
 
 final case class StructSignature(
                                   id: TypeIdentifier,
+                                  isShallowMutable: Boolean,
                                   fields: mutable.LinkedHashMap[FunOrVarId, FieldInfo],
                                   directSupertypes: Seq[TypeIdentifier],
                                   directSubtypesOpt: Option[mutable.LinkedHashSet[TypeIdentifier]],
@@ -124,8 +125,6 @@ final case class StructSignature(
   override def isInterface: Boolean = directSubtypesOpt.isDefined
 
   override def params: mutable.LinkedHashMap[FunOrVarId, FieldInfo] = fields
-
-  def isShallowMutable: Boolean = fields.exists(_._2.isReassignable)
 
   override def getNonSubstitutedCaptureDescr: CaptureDescriptor = CaptureDescriptors.unionOf(
     fields.filter((_, info) => !info.tpe.captureDescriptor.isEmpty)

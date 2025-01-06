@@ -1,6 +1,6 @@
 #nocap;
 
-struct Bar {
+mut struct Bar {
     x: Int,
     var y: Int
 }

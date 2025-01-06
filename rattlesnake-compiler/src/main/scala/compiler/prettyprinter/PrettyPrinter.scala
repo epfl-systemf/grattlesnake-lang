@@ -94,7 +94,12 @@ final class PrettyPrinter(indentGranularity: Int = 2, displayAllParentheses: Boo
         }
         addAst(body)
 
-      case StructDef(structName, fields, directSupertypes, isInterface) =>
+      case StructDef(structName, isShallowMutable, fields, directSupertypes, isInterface) =>
+        if (isShallowMutable){
+          pps
+            .add(Mut.str)
+            .addSpace()
+        }
         pps
           .add(if isInterface then Interface.str else Struct.str)
           .addSpace()

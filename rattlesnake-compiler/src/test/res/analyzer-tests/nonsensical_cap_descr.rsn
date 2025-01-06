@@ -1,6 +1,6 @@
 //> allow-more-errors
 
-struct IntReference {
+mut struct IntReference {
     var x: Int
 }
 

@@ -27,6 +27,6 @@ package Test {
 
 }
 
-struct R {
+mut struct R {
     var value: Int
 }

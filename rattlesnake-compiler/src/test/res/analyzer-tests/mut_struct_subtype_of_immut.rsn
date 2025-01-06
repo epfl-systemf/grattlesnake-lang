@@ -1,0 +1,5 @@
+//> allow-more-errors
+
+mut interface Foo
+
+struct Bar : Foo    //> E : immutable Bar cannot be a subtype of mutable Foo

@@ -57,6 +57,7 @@ final class Lowerer extends CompilerStep[(List[Source], AnalysisContext), (List[
   private def lower(structDef: StructDef): StructDef = propagatePosition(structDef.getPosition) {
     StructDef(
       structDef.structName,
+      structDef.isShallowMutable,
       structDef.fields.map(lower),
       structDef.directSupertypes,
       structDef.isInterface

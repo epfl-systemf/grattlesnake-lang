@@ -19,8 +19,8 @@ final class ControlFlowChecker(er: ErrorReporter) extends CompilerStep[(List[Sou
           for (fun <- moduleOrPackageDefTree.functions) {
             checkFunction(fun, analysisContext)
           }
-        case StructDef(structName, fields, directSupertypes, isInterface) => ()
-        case ConstDef(constName, tpeOpt, value) => ()
+        case _: StructDef => ()
+        case _: ConstDef => ()
     }
     er.displayAndTerminateIfErrors()
     input

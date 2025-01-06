@@ -145,10 +145,10 @@ final class Parser(errorReporter: ErrorReporter) extends CompilerStep[(List[Posi
   } setName "param"
 
   private lazy val structDef = {
-    (kw(Struct) OR kw(Interface)) ::: highName ::: opt(colon ::: repeatWithSep(highName, comma))
+    opt(kw(Mut)) ::: (kw(Struct) OR kw(Interface)) ::: highName ::: opt(colon ::: repeatWithSep(highName, comma))
       ::: opt(openBrace ::: repeatWithSep(param, comma) ::: closeBrace) map {
-      case structOrInterface ^: name ^: supertypesOpt ^: fieldsOpt =>
-        StructDef(name, fieldsOpt.getOrElse(Nil), supertypesOpt.getOrElse(Seq.empty), structOrInterface == Interface)
+      case optMut ^: structOrInterface ^: name ^: supertypesOpt ^: fieldsOpt =>
+        StructDef(name, optMut.isDefined, fieldsOpt.getOrElse(Nil), supertypesOpt.getOrElse(Seq.empty), structOrInterface == Interface)
     }
   } setName "structDef"
 

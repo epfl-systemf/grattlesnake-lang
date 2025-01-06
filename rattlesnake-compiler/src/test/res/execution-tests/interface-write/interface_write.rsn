@@ -1,15 +1,15 @@
 
-struct A : I {
+mut struct A : I {
     var x: Int,
     y: Double
 }
 
-struct B : I {
+mut struct B : I {
     var x: Int
 }
 
-interface I {
-   var x: Int
+mut interface I {
+    var x: Int
 }
 
 package Test {

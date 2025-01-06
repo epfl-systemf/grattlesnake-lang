@@ -1,0 +1,4 @@
+
+struct Foo {
+    var x: Int  //> E : reassignable field in immutable struct
+}

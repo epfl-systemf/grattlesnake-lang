@@ -18,10 +18,10 @@ package Main {
 
 }
 
-struct Foo {
+mut struct Foo {
     var i: Int
 }
 
-struct Bar {
+mut struct Bar {
     var f: Foo^{reg}
 }

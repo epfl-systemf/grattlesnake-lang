@@ -171,6 +171,7 @@ object Asts {
    */
   final case class StructDef(
                               structName: TypeIdentifier,
+                              isShallowMutable: Boolean,
                               fields: List[Param],
                               directSupertypes: Seq[TypeIdentifier],
                               isInterface: Boolean

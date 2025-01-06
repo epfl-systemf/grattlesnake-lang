@@ -1,7 +1,7 @@
 
 interface MutList
 
-struct MutCons : MutList {
+mut struct MutCons : MutList {
     rg: Region^,
     var head: Int,
     tail: MutList^{rg}

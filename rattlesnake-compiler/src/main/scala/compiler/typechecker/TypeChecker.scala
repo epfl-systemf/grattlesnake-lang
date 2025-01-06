@@ -82,7 +82,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
           moduleSig.importedPackages.toSet, moduleSig.importedDevices.toSet, None)
       }
 
-    case structDef@StructDef(structName, fields, _, _) =>
+    case structDef@StructDef(structName, isShallowMutable, fields, _, _) =>
       val structSig = analysisContext.resolveTypeAs[StructSignature](structName).get
       val tcCtx = TypeCheckingContext(
         analysisContext,
@@ -93,7 +93,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         analysisContext.packages.keySet,
         Device.values.toSet
       )
-      if (structSig.isShallowMutable) {
+      if (langMode.isOcapEnabled && isShallowMutable) {
         tcCtx.addLocal(SpecialFields.regFieldId, RegionType ^ CaptureSet.singletonOfRoot, structDef.getPosition,
           isReassignable = false, declHasTypeAnnot = false, () => (), () => ())
       }
@@ -109,6 +109,9 @@ final class TypeChecker(errorReporter: ErrorReporter)
               reportError(s"field $paramName has type $tpe, which is forbidden", param.getPosition)
             }
           )
+        }
+        if (isReassignable && !isShallowMutable){
+          reportError("reassignable field in immutable struct", param.getPosition)
         }
       }
 
@@ -652,12 +655,12 @@ final class TypeChecker(errorReporter: ErrorReporter)
           case Some(structSig: StructSignature) =>
             if (langMode.isOcapEnabled && structSig.isShallowMutable && regionOpt.isEmpty) {
               reportError(
-                s"cannot instantiate '$tid' without providing a region, since at least one of its fields is reassignable",
+                s"cannot instantiate '$tid' without providing a region, since it is a mutable struct",
                 instantiation.getPosition
               )
             } else if (langMode.isOcapEnabled && !structSig.isShallowMutable && regionOpt.isDefined) {
               reportError(
-                s"${structSig.id} does not have reassignable fields, hence it should not be associated with a region",
+                s"${structSig.id} is not a mutable struct, hence it should not be associated with a region",
                 regionOpt.get.getPosition
               )
             }
@@ -1093,7 +1096,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
     exprType.shape match {
       case NamedTypeShape(typeName) =>
         callerCtx.resolveType(typeName) match {
-          case Some(structSig@StructSignature(_, fields, _, _, structLangMode)) if fields.contains(fieldName) =>
+          case Some(structSig@StructSignature(_, isShallowMutable, fields, _, _, structLangMode)) if fields.contains(fieldName) =>
             val FieldInfo(fieldType, fieldIsReassig, _) = fields.apply(fieldName)
             val missingFieldMutability = mustUpdateField && !fieldIsReassig
             if (missingFieldMutability) {

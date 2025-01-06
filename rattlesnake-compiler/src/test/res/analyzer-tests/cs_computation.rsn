@@ -7,11 +7,11 @@ package Abc {
 
 }
 
-struct Foo {
+mut struct Foo {
     var t: Int
 }
 
-struct Bar {
+mut struct Bar {
     r: Region^,
     s: Region^,
     f1: Foo^{r},

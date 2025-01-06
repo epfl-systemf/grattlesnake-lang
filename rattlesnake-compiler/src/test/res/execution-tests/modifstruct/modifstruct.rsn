@@ -22,7 +22,7 @@ package Test {
 
 }
 
-struct Counter {
+mut struct Counter {
     var evens: Int,
     var odds: Int
 }
