@@ -39,15 +39,13 @@ class TypesEqualityTests {
       namedACapXDotFoo,
       NamedTypeShape(NormalTypeId("A")) ^ CaptureSet(IdPath(NormalFunOrVarId("x"))),
       NamedTypeShape(NormalTypeId("B")),
-      ArrayTypeShape(IntType, modifiable = false),
-      ArrayTypeShape(IntType, modifiable = false),
-      ArrayTypeShape(IntType, modifiable = false) ^ CaptureSet.empty,
-      ArrayTypeShape(IntType, modifiable = false) ^ CaptureSet.singletonOfRoot,
-      ArrayTypeShape(IntType, modifiable = false) ^ Mark,
-      ArrayTypeShape(IntType, modifiable = false) ^ Mark,
-      ArrayTypeShape(IntType, modifiable = true),
-      ArrayTypeShape(DoubleType, modifiable = false),
-      ArrayTypeShape(DoubleType, modifiable = true),
+      ArrayTypeShape(IntType),
+      ArrayTypeShape(IntType),
+      ArrayTypeShape(IntType) ^ CaptureSet.empty,
+      ArrayTypeShape(IntType) ^ CaptureSet.singletonOfRoot,
+      ArrayTypeShape(IntType) ^ Mark,
+      ArrayTypeShape(IntType) ^ Mark,
+      ArrayTypeShape(DoubleType)
     )
     for t1 <- types; t2 <- types do {
       val eq = t1 == t2

@@ -41,7 +41,7 @@ final class PathsSubstitutor(tcCtx: TypeCheckingContext, er: ErrorReporter) {
 
   def subst(shape: TypeShape, posOpt: Option[Position]): TypeShape = shape match {
     case primOrNamed: (PrimitiveTypeShape | NamedTypeShape) => primOrNamed
-    case ArrayTypeShape(elemType, modifiable) => ArrayTypeShape(subst(elemType, posOpt), modifiable)
+    case ArrayTypeShape(elemType) => ArrayTypeShape(subst(elemType, posOpt))
     case UnionTypeShape(unitedTypes) => UnionTypeShape(unitedTypes.map(subst(_, posOpt)))
     case UndefinedTypeShape => UndefinedTypeShape
   }

@@ -132,7 +132,7 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
   }
 
   private def computeTypeShape(typeShapeTree: TypeShapeTree, idsAreFields: Boolean): TypeShape = typeShapeTree match {
-    case ArrayTypeShapeTree(elemType, isModifiable) => ArrayTypeShape(computeType(elemType, idsAreFields), isModifiable)
+    case ArrayTypeShapeTree(elemType) => ArrayTypeShape(computeType(elemType, idsAreFields))
     case castTargetTypeShapeTree: CastTargetTypeShapeTree => computeCastTargetTypeShape(castTargetTypeShapeTree)
   }
 

@@ -114,7 +114,7 @@ package Cells {
         return array;
     }
     
-    fn populateArray(t: Tree^, array: mut arr^ Int, var idx: Int) -> Int {
+    fn populateArray(t: Tree^, array: arr^ Int, var idx: Int) -> Int {
         if (t is Fork){
             idx = populateArray(t.left, array, idx);
         };

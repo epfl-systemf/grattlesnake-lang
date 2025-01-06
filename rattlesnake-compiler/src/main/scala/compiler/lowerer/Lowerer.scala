@@ -305,8 +305,8 @@ final class Lowerer extends CompilerStep[(List[Source], AnalysisContext), (List[
   
   private def lower(shape: TypeShapeTree): TypeShapeTree = shape match {
     case shape: CastTargetTypeShapeTree => shape
-    case ArrayTypeShapeTree(elemType, isModifiable) =>
-      ArrayTypeShapeTree(lower(elemType), isModifiable)
+    case ArrayTypeShapeTree(elemType) =>
+      ArrayTypeShapeTree(lower(elemType))
   }
   
   private def lower(captureSetTree: ExplicitCaptureSetTree): ExplicitCaptureSetTree = propagatePosition(captureSetTree.getPosition) {

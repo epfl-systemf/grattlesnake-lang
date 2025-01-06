@@ -207,11 +207,11 @@ final class TypeChecker(errorReporter: ErrorReporter)
     import ArrayTypeShapeTree as ArrSh
     import PrimitiveTypeShapeTree as PrimSh
     funDef match {
-      case FunDef(_, List(Param(_, ArrSh(PrimSh(StringType), _), _)), _, _, _) => ()
+      case FunDef(_, List(Param(_, ArrSh(PrimSh(StringType)), _)), _, _, _) => ()
       case _ =>
         val funSig = funDef.getSignatureOpt.get
         val expectedHeader =
-          s"${Keyword.Main} ${Keyword.Fn} ${funDef.funName}(${ArrayTypeShape(StringType, false)}) -> ${funSig.retType}"
+          s"${Keyword.Main} ${Keyword.Fn} ${funDef.funName}(${ArrayTypeShape(StringType)}) -> ${funSig.retType}"
         reportError(s"main function should have the following header: $expectedHeader", funDef.getPosition)
     }
   }
@@ -290,12 +290,12 @@ final class TypeChecker(errorReporter: ErrorReporter)
   private def checkTypeShape(typeShapeTree: TypeShapeTree, idsAreFields: Boolean)
                             (using tcCtx: TypeCheckingContext, langMode: LanguageMode,
                              shapePos: ShapeAnnotPosition): TypeShape = typeShapeTree match {
-    case ArrayTypeShapeTree(elemTypeTree, isModifiable) =>
+    case ArrayTypeShapeTree(elemTypeTree) =>
       val elemType = checkType(elemTypeTree, idsAreFields)
       if (elemType.captureDescriptor.coversRoot){
         reportError("array elements are not allowed to capture the root capability", typeShapeTree.getPosition)
       }
-      ArrayTypeShape(elemType, isModifiable)
+      ArrayTypeShape(elemType)
     case castTargetTypeShapeTree: CastTargetTypeShapeTree =>
       checkCastTargetTypeShape(castTargetTypeShapeTree)
   }
@@ -379,7 +379,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
                     else Some(lhsPath.dot(selected))
                   }
                 }
-              case ArrayTypeShape(elemType, modifiable) if modifiable =>
+              case ArrayTypeShape(elemType) =>
                 Some(lhsPath.dot(selected))
               case lhsType => None
             }
@@ -441,8 +441,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
           varRef.setType(varType)
         case indexing@Indexing(indexed, _) =>
           checkExpr(indexing)
-          val lhsType = exprMustBeIndexable(indexed.getType, tcCtx, varAssig.getPosition,
-            mustUpdate = true, allowString = false)
+          val lhsType = exprMustBeIndexable(indexed.getType, tcCtx, varAssig.getPosition, allowString = false)
           checkSubtypingConstraint(lhsType, rhsType, varAssig.getPosition, "")
         case select@Select(structExpr, selected) =>
           val structType = checkExpr(structExpr)
@@ -466,8 +465,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
           varRef.setType(inPlaceModifiedType)
         case indexing@Indexing(indexed, _) =>
           checkExpr(indexing)
-          val inPlaceModifiedElemType = exprMustBeIndexable(indexed.getType, tcCtx, varModif.getPosition,
-            mustUpdate = true, allowString = false)
+          val inPlaceModifiedElemType = exprMustBeIndexable(indexed.getType, tcCtx, varModif.getPosition, allowString = false)
           val operatorRetType = mustExistOperator(inPlaceModifiedElemType, op, rhsType, varModif.getPosition)
           checkSubtypingConstraint(inPlaceModifiedElemType, operatorRetType, varModif.getPosition, "")
         case select@Select(structExpr, selected) =>
@@ -611,7 +609,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         val indexedType = checkExpr(indexed)
         val argType = checkExpr(arg)
         checkSubtypingConstraint(IntType, argType, indexing.getPosition, "array index")
-        val elemType = exprMustBeIndexable(indexed.getType, tcCtx, indexed.getPosition, mustUpdate = false, allowString = true)
+        val elemType = exprMustBeIndexable(indexed.getType, tcCtx, indexed.getPosition, allowString = true)
         checkUnboxedType(elemType, indexing.getPosition)
         elemType
 
@@ -628,7 +626,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         }
         val elemType = checkType(elemTypeTree, idsAreFields = false)
         requireAndCheckRegionIffOcapEnabled(regionOpt, arrayInit.getPosition, isMutableObj = true)
-        ArrayTypeShape(elemType, modifiable = true) ^ regionOpt.map(minimalCaptureSetFor)
+        ArrayTypeShape(elemType) ^ regionOpt.map(minimalCaptureSetFor)
 
       case filledArrayInit@FilledArrayInit(Nil, regionOpt) =>
         reportError("cannot infer type of empty array, use 'arr <type>[0]' instead", filledArrayInit.getPosition)
@@ -639,7 +637,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         val types = arrayElems.map(checkExpr)
         computeJoinOf(types.toSet, tcCtx) match {
           case Some(elemsJoin) =>
-            ArrayTypeShape(elemsJoin, isMutableArray) ^ regionOpt.map(minimalCaptureSetFor)
+            ArrayTypeShape(elemsJoin) ^ regionOpt.map(minimalCaptureSetFor)
           case None =>
             reportError("cannot infer array type", filledArrayInit.getPosition)
         }
@@ -723,7 +721,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
 
       case select@Select(lhs, selected) =>
         checkExpr(lhs).shape match {
-          case ArrayTypeShape(elemType, modifiable) if modifiable && selected == SpecialFields.regFieldId =>
+          case ArrayTypeShape(elemType) if selected == SpecialFields.regFieldId =>
             RegionType ^ CaptureSet.singletonOfRoot
           case _ =>
             checkFieldAccess(lhs, selected, select.getPosition, mustUpdateField = false)
@@ -894,7 +892,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
     case CapturingType(shape, captureDescriptor) =>
       checkUnboxedType(shape, posOpt)
       checkUnboxedCaptureDescr(captureDescriptor, posOpt)
-    case ArrayTypeShape(elemType, modifiable) =>
+    case ArrayTypeShape(elemType) =>
       checkUnboxedType(elemType, posOpt)
     case UnionTypeShape(unitedTypes) =>
       unitedTypes.foreach(checkUnboxedType(_, posOpt))
@@ -1038,16 +1036,10 @@ final class TypeChecker(errorReporter: ErrorReporter)
                                    exprType: Type,
                                    ctx: TypeCheckingContext,
                                    posOpt: Option[Position],
-                                   mustUpdate: Boolean,
                                    allowString: Boolean
                                  ): Type = {
-    require(!(mustUpdate && allowString))
     exprType.shape match
-      case ArrayTypeShape(elemType, modifiable) =>
-        if (mustUpdate && !modifiable) {
-          reportError("update impossible: missing modification privileges on array", posOpt)
-        }
-        elemType
+      case ArrayTypeShape(elemType) => elemType
       case StringType if allowString => CharType
       case _ =>
         val expectedDescr = if allowString then "an array or a string" else "an array"

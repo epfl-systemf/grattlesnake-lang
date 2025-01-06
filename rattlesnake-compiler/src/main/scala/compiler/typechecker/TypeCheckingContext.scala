@@ -116,7 +116,7 @@ final case class TypeCheckingContext private(
         case NamedTypeShape(typeName) =>
           resolveTypeAs[SelectableSig](typeName).flatMap(_.typeOfSelectIfCapturable(fld))
             .getOrElse(UndefinedTypeShape)
-        case ArrayTypeShape(elemType, modifiable) if modifiable && fld == SpecialFields.regFieldId =>
+        case ArrayTypeShape(elemType) if fld == SpecialFields.regFieldId =>
           RegionType ^ CaptureSet.singletonOfRoot
         case _ => UndefinedTypeShape
       }

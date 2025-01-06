@@ -575,9 +575,9 @@ object Asts {
     override def children: List[Ast] = Nil
   }
 
-  final case class ArrayTypeShapeTree(elemType: TypeTree, isModifiable: Boolean) extends TypeShapeTree {
+  final case class ArrayTypeShapeTree(elemType: TypeTree) extends TypeShapeTree {
     override def getResolvedTypeOpt: Option[TypeShape] = {
-      elemType.getResolvedTypeOpt.map(ArrayTypeShape(_, isModifiable))
+      elemType.getResolvedTypeOpt.map(ArrayTypeShape(_))
     }
 
     override def children: List[Ast] = List(elemType)

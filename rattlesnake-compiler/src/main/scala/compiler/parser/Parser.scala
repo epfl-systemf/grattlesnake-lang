@@ -223,8 +223,8 @@ final class Parser(errorReporter: ErrorReporter) extends CompilerStep[(List[Posi
   } setName "primOrNamedType"
 
   private lazy val arrayType = recursive {
-    opt(kw(Mut)) ::: kw(Arr).ignored ::: opt(hatAndCaptureDescr) ::: typeTree map {
-      case mutOpt ^: cdOpt ^: tp => ArrayTypeShapeTree(tp, mutOpt.isDefined) ^ cdOpt
+    kw(Arr).ignored ::: opt(hatAndCaptureDescr) ::: typeTree map {
+      case cdOpt ^: tp => ArrayTypeShapeTree(tp) ^ cdOpt
     }
   } setName "arrayType"
 

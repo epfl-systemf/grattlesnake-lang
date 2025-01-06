@@ -66,15 +66,14 @@ object Types {
   /**
    * Type of an array
    * @param elemType type of array elements
-   * @param modifiable whether or not the content of the array is allowed to be updated from this reference
    */
-  final case class ArrayTypeShape(elemType: Type, modifiable: Boolean) extends TypeShape {
+  final case class ArrayTypeShape(elemType: Type) extends TypeShape {
     override def toString: String = {
-      (if modifiable then (Keyword.Mut.str ++ " ") else "") ++ s"${Keyword.Arr.str} $elemType"
+      s"${Keyword.Arr.str} $elemType"
     }
 
     private[Types] override def toStringCapturing(capDescrStr: String): String =
-      (if modifiable then (Keyword.Mut.str ++ " ") else "") ++ s"${Keyword.Arr.str}^$capDescrStr $elemType"
+      s"${Keyword.Arr.str}^$capDescrStr $elemType"
   }
 
   final case class UnionTypeShape(unitedTypes: Set[TypeShape]) extends TypeShape {

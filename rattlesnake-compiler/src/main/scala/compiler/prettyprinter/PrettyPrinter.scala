@@ -415,8 +415,8 @@ final class PrettyPrinter(indentGranularity: Int = 2, displayAllParentheses: Boo
         addAst(capSetTree)
         addAst(body)
 
-      case CapturingTypeTree(ArrayTypeShapeTree(elemType, isModifiable), captureDescr) =>
-        addArrayTypeTree(elemType, isModifiable, Some(captureDescr))
+      case CapturingTypeTree(ArrayTypeShapeTree(elemType), captureDescr) =>
+        addArrayTypeTree(elemType, Some(captureDescr))
 
       case CapturingTypeTree(typeShapeTree, captureDescr) =>
         addAst(typeShapeTree)
@@ -426,8 +426,8 @@ final class PrettyPrinter(indentGranularity: Int = 2, displayAllParentheses: Boo
       case WrapperTypeTree(tpe) =>
         pps.add(tpe.toString)
 
-      case ArrayTypeShapeTree(elemTypeTree, isModifiable) =>
-        addArrayTypeTree(elemTypeTree, isModifiable, arrayCdTreeOpt = None)
+      case ArrayTypeShapeTree(elemTypeTree) =>
+        addArrayTypeTree(elemTypeTree, arrayCdTreeOpt = None)
 
       case PrimitiveTypeShapeTree(primitiveType) =>
         pps.add(primitiveType.toString)
@@ -446,13 +446,8 @@ final class PrettyPrinter(indentGranularity: Int = 2, displayAllParentheses: Boo
     }
   }
 
-  private def addArrayTypeTree(elemTypeTree: TypeTree, isModifiable: Boolean, arrayCdTreeOpt: Option[CaptureDescrTree])
+  private def addArrayTypeTree(elemTypeTree: TypeTree, arrayCdTreeOpt: Option[CaptureDescrTree])
                               (implicit pps: PrettyPrintString): Unit = {
-    if (isModifiable) {
-      pps
-        .add(Mut.str)
-        .addSpace()
-    }
     pps.add(Arr.str)
     arrayCdTreeOpt.foreach { arrayCdTree =>
       pps.add("^")

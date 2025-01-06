@@ -3,16 +3,16 @@
 
 package Test {
 
-    fn swap(array: mut arr Double, i1: Int, i2: String) -> Void {
+    fn swap(array: arr Double, i1: Int, i2: String) -> Void {
         val tmp = array[i1];
         array[i1] = array[i2];  //> E : array index: expected 'Int', found 'String'
         array[i2] = tmp;
     }
     
-    fn selectionSort(array: mut arr Int) {
+    fn selectionSort(array: arr Int) {
         for var i = 0; i < #array; i += 1 {
             val maxIdx = me.maxIdx(array, i);
-            me.swap(array, i, maxIdx)      //> E : expected 'mut arr Double', found 'mut arr Int'
+            me.swap(array, i, maxIdx)      //> E : expected 'arr Double', found 'arr Int'
         };
     }
     
@@ -38,7 +38,7 @@ package Test {
             nbs[i] = (2*i - i*i + 200) % 25;
             nbs[i] += 1;
         };
-        selectionSort(["abcdefghijk"]); //> E@col=23 : expected 'mut arr Int', found 'mut arr String'
+        selectionSort(["abcdefghijk"]); //> E@col=23 : expected 'arr Int', found 'arr String'
         for var i = 0; i < 10; i += 1 {
             print(intToString(nbs[i]));
             print(" ")
