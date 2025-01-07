@@ -794,7 +794,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
     }
   }
 
-  private def checkIsAllowedInCurrentEnvir(expr: Expr)(using tcCtx: TypeCheckingContext): Unit = {
+  private def checkIsAllowedInCurrentEnvir(expr: Expr)(using tcCtx: TypeCheckingContext, langMode: LanguageMode): Unit = {
 
     def performCheck(capt: Capturable): Unit = {
       if (!tcCtx.environment.allowsCapturable(capt)) {
@@ -802,12 +802,14 @@ final class TypeChecker(errorReporter: ErrorReporter)
       }
     }
 
-    expr match {
-      case VariableRef(name) => performCheck(IdPath(name))
-      case MeRef() => performCheck(MePath)
-      case PackageRef(pkgName) => performCheck(CapPackage(pkgName))
-      case DeviceRef(device) => performCheck(CapDevice(device))
-      case _ => ()
+    if (langMode.isOcapEnabled) {
+      expr match {
+        case VariableRef(name) => performCheck(IdPath(name))
+        case MeRef() => performCheck(MePath)
+        case PackageRef(pkgName) => performCheck(CapPackage(pkgName))
+        case DeviceRef(device) => performCheck(CapDevice(device))
+        case _ => ()
+      }
     }
   }
 
