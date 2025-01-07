@@ -543,7 +543,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
           )
         }
       }
-      val innerCtx = tcCtx.copyWithEnvironment(EnclosedEnvir(_))
+      val innerCtx = tcCtx.copyWithEnvironment(_ => EnclosedEnvir)
       checkStat(body)(using innerCtx)
   }
 

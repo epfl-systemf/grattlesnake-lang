@@ -18,7 +18,7 @@ object RootEnvir extends Environment {
     capturable.isCoveredBy(CaptureSet.singletonOfRoot)
 }
 
-final class EnclosedEnvir(val enclosingEnvir: Environment) extends Environment {
+object EnclosedEnvir extends Environment {
   override val insideEnclosure: Boolean = true
 
   override def allowsCapturable(capturable: Capturable)(using TypeCheckingContext): Boolean = true
