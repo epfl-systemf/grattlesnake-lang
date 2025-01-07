@@ -196,9 +196,6 @@ final class TypeChecker(errorReporter: ErrorReporter)
     val optRetType = optRetTypeTree.map(checkType(_, idsAreFields = false)(using tcCtx, langMode))
     val expRetType = optRetType.getOrElse(VoidType)
     restrictRootCaptures(expRetType, funDef.getPosition, isReassignable = false, "function result")
-    if (expRetType.shape == RegionType){
-      reportError("functions are not allowed to return a region", funDef.getPosition)
-    }
     checkStat(body)(using tcCtx, langMode, expRetType)
     tcCtx.writeLocalsRelatedWarnings(errorReporter)
   }
