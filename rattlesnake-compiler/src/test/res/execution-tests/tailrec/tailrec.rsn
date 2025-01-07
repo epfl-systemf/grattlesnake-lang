@@ -19,7 +19,7 @@ package Main {
     }
 
     fn maxSince(max: Int, startIdx: Int, array: arr^ Int) -> Int {
-        if startIdx < #array {
+        if startIdx < len array {
             val curr = array[startIdx];
             return maxSince!(
                     when curr > max then curr else max,

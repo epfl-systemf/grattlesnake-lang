@@ -3,11 +3,11 @@ package Arrays {
 
     // returns the index of the minimal element of the array
     fn minIdx(array: arr^ Int, firstIdx: Int) -> Int {
-        if #array == 0 {
+        if len array == 0 {
             panic "min of empty array"
         } else {
             var minIdx = firstIdx;
-            for val len = #array, var i = firstIdx + 1; i < len; i += 1 {
+            for val length = len array, var i = firstIdx + 1; i < length; i += 1 {
                 if array[i] < array[minIdx] {
                     minIdx = i;
                 }
@@ -27,7 +27,7 @@ module Sorting(package Arrays) {
     }
 
     fn selectionSort(array: arr^ Int) {
-        for var i = 0; i < #array; i += 1 {
+        for var i = 0; i < len array; i += 1 {
             val minIdx = Arrays.minIdx(array, i);
             me.swap(array, i, minIdx)
         };
@@ -46,9 +46,9 @@ package Main {
     }
 
     fn printArray(a: arr^ Int){
-        for var i = 0; i < #a; i += 1 {
+        for var i = 0; i < len a; i += 1 {
             print(intToString(a[i]));
-            if i < #a-1 {
+            if i < len a - 1 {
                 print(" ")
             }
         }

@@ -5,7 +5,7 @@ package Main {
         val r = newregion;
         val array = arr@r Int[0];
         enclosed {} {
-            Unsafe.shuffle(array);   //>STACKTRACE
+            Unsafe.shuffle(#array);   //>STACKTRACE
         }
     }
 

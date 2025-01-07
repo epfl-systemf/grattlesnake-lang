@@ -13,7 +13,7 @@ package FilePaths {
 
     fn mkPath(parts: arr^ String) -> FilePath {
         var p: FilePath = new RootPath();
-        for var i = 0; i < #parts; i += 1 {
+        for var i = 0; i < len parts; i += 1 {
             p = new NonRootPath(p, parts[i]);
         };
         return p;

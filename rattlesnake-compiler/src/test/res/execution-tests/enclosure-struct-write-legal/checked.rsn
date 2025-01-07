@@ -7,7 +7,7 @@ package Main {
         val cntReg = newregion;
         val counter = new@cntReg Counter(0, 0);
         enclosed {cntReg} {
-            Untrusted.countOddsAndEvens(ls, counter);
+            Untrusted.countOddsAndEvens(#ls, #counter);
         };
         print(Counters.toString(counter));
     }

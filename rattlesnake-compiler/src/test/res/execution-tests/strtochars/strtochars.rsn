@@ -6,17 +6,17 @@ package Test {
     }
 
     fn toCharsArray(s: String, arrReg: Region^) -> arr^{arrReg} Char {
-        val array = arr@arrReg Char[#s];
-        for var i = 0; i < #s; i += 1 {
+        val array = arr@arrReg Char[len s];
+        for var i = 0; i < len s; i += 1 {
             array[i] = s[i];
         };
         return array;
     }
 
     fn printArrayWeird(chars: arr^ Char){
-        for var i = 0; i < #chars; i += 1 {
+        for var i = 0; i < len chars; i += 1 {
             print(charToString(chars[i]));
-            if i < #chars-1 && (chars[i] as Int) >= ('a' as Int) && chars[i] != 's' {
+            if i < len chars - 1 && (chars[i] as Int) >= ('a' as Int) && chars[i] != 's' {
                 print(" ");
             }
         }

@@ -8,7 +8,7 @@ package Main {
         };
         var line = 1;
         var lineStart = true;
-        for var ci = 0; ci < #text; ci += 1 {
+        for var ci = 0; ci < len text; ci += 1 {
             if lineStart {
                 print("Line " + intToString(line) + ": ");
                 lineStart = false;

@@ -4,7 +4,7 @@ module Grid(frameR: Region^, cellsR: Region^, cells: arr^{frameR} arr^{frameR} C
 package GridMaker {
 
     fn mkGrid(frameR: Region^, valuesR: Region^, rawValues: arr arr Char) -> Grid^{frameR, valuesR} {
-        val cells = arr@frameR arr^{frameR} Cell^{valuesR}[#rawValues];
+        val cells = arr@frameR arr^{frameR} Cell^{valuesR}[len rawValues];
         return new Grid(frameR, valuesR, cells);
     }
 

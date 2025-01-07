@@ -14,7 +14,7 @@ package Test {
     }
     
     fn f4(Int, s: String, Int) -> Int {
-        return #s
+        return len s
     }
     
     main fn testF(arr String){

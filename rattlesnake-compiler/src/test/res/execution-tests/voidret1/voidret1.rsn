@@ -18,7 +18,7 @@ package Test {
     
     main fn m(arr String) {
         val a = me.bar(-10, -20, Test.foo());
-        if #a != 3 {
+        if len a != 3 {
             panic "bad length";
         };
         print(intToString(a[0]) + ", " + intToString(a[1]) + ", " + intToString(a[2]));

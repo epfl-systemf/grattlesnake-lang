@@ -550,10 +550,11 @@ final class Backend[V <: ClassVisitor](
             mv.visitInsn(Opcodes.INEG)
           case Minus if operand.getTypeShape == DoubleType =>
             mv.visitInsn(Opcodes.DNEG)
-          case Sharp if operand.getTypeShape.isInstanceOf[ArrayTypeShape] =>
+          case Len if operand.getTypeShape.isInstanceOf[ArrayTypeShape] =>
             mv.visitInsn(Opcodes.ARRAYLENGTH)
-          case Sharp if operand.getTypeShape == StringType =>
+          case Len if operand.getTypeShape == StringType =>
             mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, stringTypeStr, "length", "()I", false)
+          case Sharp => ()
           case _ => throw new AssertionError(s"unexpected $operator in code generation")
         }
 

@@ -23,6 +23,7 @@ enum Operator(val str: String) {
 
   case ExclamationMark extends Operator("!")
   case Sharp extends Operator("#")
+  case Len extends Operator("len")
 
   case Dot extends Operator(".")
 
@@ -46,6 +47,8 @@ enum Operator(val str: String) {
   case Hat extends Operator("^")
   case HatOpenBrace extends Operator("^{")
   case At extends Operator("@")
+  
+  def isNamedOperator: Boolean = str.forall(_.isLetter)
 
   override def toString: String = str
 }

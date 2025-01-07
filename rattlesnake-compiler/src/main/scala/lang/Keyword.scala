@@ -20,7 +20,7 @@ enum Keyword(val str: String) {
   case Mut extends Keyword("mut")
   case New extends Keyword("new")
   case NewRegion extends Keyword("newregion")
-  case NoCap extends Keyword("nocap")
+  case Nocap extends Keyword("nocap")
   case Package extends Keyword("package")
   case Panic extends Keyword("panic")
   case Restricted extends Keyword("restricted")

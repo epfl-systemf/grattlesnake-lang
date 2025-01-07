@@ -22,7 +22,7 @@ final class PrettyPrinter(indentGranularity: Int = 2, displayAllParentheses: Boo
         if (languageMode == OcapDisabled){
           pps
             .add("#")
-            .add(NoCap.str)
+            .add(Nocap.str)
             .add(";")
             .newLine()
         }
@@ -258,6 +258,9 @@ final class PrettyPrinter(indentGranularity: Int = 2, displayAllParentheses: Boo
 
       case UnaryOp(operator, operand) =>
         pps.add(operator.str)
+        if (operator.isNamedOperator){
+          pps.addSpace()
+        }
         val displayParenth = operand.isInstanceOf[UnaryOp | BinaryOp]
         if (displayParenth) {
           pps.add("(")

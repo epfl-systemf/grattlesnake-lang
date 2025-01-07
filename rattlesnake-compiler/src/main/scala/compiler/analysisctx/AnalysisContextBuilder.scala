@@ -6,7 +6,7 @@ import compiler.pipeline.CompilationStep.ContextCreation
 import compiler.reporting.Errors.{Err, ErrorReporter}
 import compiler.reporting.Position
 import compiler.typechecker.SubtypeRelation.subtypeOf
-import compiler.typechecker.{RootEnvir, TypeCheckingContext}
+import compiler.typechecker.TypeCheckingContext
 import identifiers.SpecialFields.regFieldId
 import identifiers.{FunOrVarId, IntrinsicsPackageId, SpecialFields, TypeIdentifier}
 import lang.*
@@ -270,12 +270,14 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
             // and what me refers to
             val tcCtx = TypeCheckingContext(
               analysisContext = builtCtx,
-              environment = RootEnvir,
               meTypeId = structId,
               meCaptureDescr = structSig.getNonSubstitutedCaptureDescr,
               currFunIdOpt = None,
               allowedPackages = builtCtx.packages.keySet,
-              allowedDevices = Device.values.toSet
+              allowedDevices = Device.values.toSet,
+              TypeCheckingContext.topLevelDefsParamsScopeDepth,
+              insideEnclosure = false,
+              currentRestriction = CaptureSet.singletonOfRoot
             )
             for ((fldName, superFldInfo) <- directSupertypeSig.fields) {
               structSig.fields.get(fldName) match {

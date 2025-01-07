@@ -22,9 +22,9 @@ package Test {
 
     fn tableToString(table: arr arr Int) -> String {
         var s = "";
-        for var l = 0; l < #table; l += 1 {
+        for var l = 0; l < len table; l += 1 {
             val line = table[l];
-            for var c = 0; c < #line; c += 1 {
+            for var c = 0; c < len line; c += 1 {
                 var cellStr = intToString(line[c]);
                 cellStr = prepadTo(cellStr, cellWidth);
                 s += cellStr;
@@ -35,7 +35,7 @@ package Test {
     }
 
     fn prepadTo(var s: String, n: Int) -> String {
-        val padCnt = n-#s;
+        val padCnt = n - len s;
         for var i = 0; i < padCnt; i += 1 {
             s = " " + s;
         };

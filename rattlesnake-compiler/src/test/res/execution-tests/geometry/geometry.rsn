@@ -17,12 +17,12 @@ package Test {
     // creates the rectangles described by rectanglesData (leftUpperX, leftUpperY, width, height) and returns them
     // fills 'areas' with their areas
     fn createRectangles(rectanglesData: arr^ Double, r: Region^) -> arr^{r} Rectangle {
-        if #rectanglesData % 4 != 0 {
+        if len rectanglesData % 4 != 0 {
             panic "length of rectanglesData should be a multiple of 4"
         };
-        val rectangles = arr@r Rectangle[#rectanglesData / 4];
+        val rectangles = arr@r Rectangle[len rectanglesData / 4];
         var i = 0;
-        for ; i < #rectanglesData; i += 4 {
+        for ; i < len rectanglesData; i += 4 {
             rectangles[i / 4] = new Rectangle(new Vertex(rectanglesData[i], rectanglesData[i + 1]), rectanglesData[i + 2], rectanglesData[i + 3])
         };
         return rectangles
@@ -31,7 +31,7 @@ package Test {
     main fn test(arr String){
         val s = newregion;
         val rectangles = createRectangles([1.2, 4.7, 9.3, 7.0, 7.5, 14.1, 7.9, 6.9, 9.3, 5.6, 7.1, 11.8], s);
-        for var i = 0; i < #rectangles; i += 1 {
+        for var i = 0; i < len rectangles; i += 1 {
             val rectangle = rectangles[i];
             val area = Geometry.computeArea(rectangle);
             printD(area);

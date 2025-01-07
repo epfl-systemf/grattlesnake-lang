@@ -11,7 +11,7 @@ package Test {
     }
 
     fn printArray(xs: arr Double){
-        for var i = 0; i < #xs; i += 1 {
+        for var i = 0; i < len xs; i += 1 {
             print(doubleToString(xs[i]) + " ");
         }
     }

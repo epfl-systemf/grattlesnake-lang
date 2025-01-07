@@ -10,7 +10,7 @@ package Test {
     }
     
     fn selectionSort(array: arr Int) {
-        for var i = 0; i < #array; i += 1 {
+        for var i = 0; i < len array; i += 1 {
             val maxIdx = me.maxIdx(array, i);
             me.swap(array, i, maxIdx)      //> E : expected 'arr Double', found 'arr Int'
         };
@@ -19,11 +19,11 @@ package Test {
     // returns the index of the maximal element of the array
     fn maxIdx(array: arr Int, firstIdx: Index) -> Int {         //> E : unknown: Index
         val t = new Baz(firstIndex);     //> E : not found: structure or module 'Baz'
-        if #array == 0 {
+        if len array == 0 {
             panic -1    //> E : panic: expected 'String', found 'Int'
         } else {
             var maxIdx: Int = firstIdx;
-            for val len: Char = #array, var i = firstIdx + 1; i < len; i += 1 {  //> E@col=17 : local definition: expected 'Char', found 'Int'
+            for val length: Char = len array, var i = firstIdx + 1; i < length; i += 1 {  //> E@col=17 : local definition: expected 'Char', found 'Int'
                 if array[i] > array[maxIdx] {
                     maxIdx = intToString(i);    //> E : expected 'Int', found 'String'
                 }

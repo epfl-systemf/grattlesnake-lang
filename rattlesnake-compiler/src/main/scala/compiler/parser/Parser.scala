@@ -80,7 +80,7 @@ final class Parser(errorReporter: ErrorReporter) extends CompilerStep[(List[Posi
   private val greaterThan = op(GreaterThan).ignored
   private val at = op(At).ignored
 
-  private val unaryOperator = op(Minus, ExclamationMark, Sharp)
+  private val unaryOperator = op(Minus, ExclamationMark, Len, Sharp)
   private val assignmentOperator = op(PlusEq, MinusEq, TimesEq, DivEq, ModuloEq, Assig)
 
   private val endl = treeParser("<endl>") {
@@ -92,7 +92,7 @@ final class Parser(errorReporter: ErrorReporter) extends CompilerStep[(List[Posi
   // ---------- Syntax description -----------------------------------------------------------------------
 
   private lazy val source: FinalTreeParser[Source] = {
-    opt(op(Sharp) ::: kw(NoCap) ::: semicolon) ::: repeat(topLevelDef ::: opt(op(Semicolon)).ignored) ::: endOfFile.ignored map {
+    opt(op(Sharp) ::: kw(Nocap) ::: semicolon) ::: repeat(topLevelDef ::: opt(op(Semicolon)).ignored) ::: endOfFile.ignored map {
       case nocapOpt ^: defs => Source(defs, if nocapOpt.isDefined then OcapDisabled else OcapEnabled)
     }
   } setName "source"

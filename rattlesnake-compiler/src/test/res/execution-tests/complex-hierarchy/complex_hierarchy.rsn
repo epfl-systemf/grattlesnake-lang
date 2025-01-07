@@ -89,10 +89,10 @@ package Test {
     }
 
     fn testArray(expected: arr Int, actual: arr^ Int){
-        if #actual != #expected {
+        if len actual != len expected {
             panic "length mismatch"
         };
-        for var idx = 0; idx < #actual; idx += 1 {
+        for var idx = 0; idx < len actual; idx += 1 {
             print(when actual[idx] == expected[idx] then "PASSED\n" else "FAILED\n")
         }
     }
