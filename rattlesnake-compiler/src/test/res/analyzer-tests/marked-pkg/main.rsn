@@ -1,0 +1,8 @@
+
+package Main {
+
+    fn foo() -> Unsafe {
+        return Unsafe;  //> E : returned value: expected 'Unsafe', found 'Unsafe^#' <//> E : Unsafe is not allowed in the current environment
+    }
+
+}

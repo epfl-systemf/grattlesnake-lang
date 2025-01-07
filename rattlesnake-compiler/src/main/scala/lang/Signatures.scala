@@ -107,7 +107,7 @@ final case class PackageSignature(
 
   override def getNonSubstitutedCaptureDescr: CaptureDescriptor = CaptureSet(globalCaptures)
 
-  def asType: Type = NamedTypeShape(id) ^ CaptureSet(globalCaptures)
+  def asType: Type = NamedTypeShape(id) ^ (if languageMode.isOcapEnabled then CaptureSet(globalCaptures) else Mark)
 
   override def isInterface: Boolean = false
 }
