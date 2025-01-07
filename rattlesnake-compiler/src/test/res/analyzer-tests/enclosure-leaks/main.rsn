@@ -1,0 +1,40 @@
+
+package Main {
+
+    fn test() -> Int {
+        val x: Int;
+        enclosed {} {
+            x = Unsafe.genPrimitive();  // OK
+        };
+        val xs: arr^# Int;
+        enclosed {} {
+            xs = Unsafe.genArray();     // OK
+        };
+        val r = newregion;
+        val ys: arr^{r} Int;
+        enclosed {} {
+            ys = Unsafe.genArray();     //> E : expected 'arr^{r} Int', found 'arr^# Int' <//> E : illegal assignment: cannot prove that no value of a marked type is being leaked
+        };
+        val f: Foo^{r,fs};
+        enclosed {} {
+            f = Unsafe.genStruct();     //> E : expected 'Foo^{fs, r}', found 'Foo^#' <//> E : illegal assignment: cannot prove that no value of a marked type is being leaked
+        };
+        val b: Bar^{r};
+        enclosed {r} {
+            b = genBar(r);              // OK
+        };
+        // TODO more test cases
+        val length: Int;
+        enclosed {} {
+            length = #xs;
+        };
+        return x + length + #ys + f.i + b.i;
+    }
+
+    fn genBar(r: Region^) -> Bar^{r} {
+        return new@r Bar(100);
+    }
+
+}
+
+mut struct Bar { i: Int }

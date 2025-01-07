@@ -7,7 +7,7 @@ import compiler.reporting.{Errors, Position}
 import compiler.typechecker.TypeCheckingContext.{LocalInfo, LocalUsesCollector}
 import identifiers.{FunOrVarId, SpecialFields, TypeIdentifier}
 import lang.*
-import lang.Capturables.{ConcreteCapturable, IdPath, Path}
+import lang.Capturables.{ConcreteCapturable, IdPath, Path, RootCapability}
 import lang.CaptureDescriptors.*
 import lang.Types.*
 import lang.Types.PrimitiveTypeShape.{NothingType, RegionType, VoidType}
@@ -129,6 +129,18 @@ final case class TypeCheckingContext private(
         .getOrElse(UndefinedTypeShape)
     case Capturables.CapDevice(device) =>
       device.tpe
+  }
+  
+  def isProper(tpe: Type): Boolean = isProper(tpe.captureDescriptor)
+  
+  def isProper(cd: CaptureDescriptor): Boolean = cd match {
+    case Mark => false
+    case CaptureSet(set) => set.forall {
+      case RootCapability => true
+      case concr: ConcreteCapturable =>
+        val tpe = lookup(concr)
+        isProper(tpe)
+    }
   }
 
   def packageIsAllowed(pkg: TypeIdentifier): Boolean = {

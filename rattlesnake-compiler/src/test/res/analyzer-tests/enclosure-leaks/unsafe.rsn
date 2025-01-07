@@ -1,0 +1,25 @@
+#nocap;
+
+package Unsafe {
+
+    fn genPrimitive() -> Int {
+        fail()
+    }
+
+    fn genStruct() -> Foo {
+        fail()
+    }
+
+    fn genArray() -> arr Int {
+        fail()
+    }
+
+    fn fail(){
+        panic "not implemented"
+    }
+
+}
+
+struct Foo {
+    i: Int
+}

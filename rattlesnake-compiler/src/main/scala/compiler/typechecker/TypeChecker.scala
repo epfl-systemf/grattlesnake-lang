@@ -451,10 +451,9 @@ final class TypeChecker(errorReporter: ErrorReporter)
         case _ =>
           reportError("syntax error: only variables, struct fields and array elements can be assigned", varAssig.getPosition)
       }
-      checkIsAllowedAssignmentTarget(lhs)
+      checkIsAllowedAssignmentTarget(lhs, rhsType)
 
     case varModif@VarModif(lhs, rhs, op) =>
-      // no check for unused mut because no operator combinable with = can operate on mutable types
       val rhsType = checkExpr(rhs)
       lhs match {
         case varRef@VariableRef(name) =>
@@ -477,7 +476,6 @@ final class TypeChecker(errorReporter: ErrorReporter)
         case _ =>
           reportError("syntax error: only variables, struct fields and array elements can be assigned", varModif.getPosition)
       }
-      checkIsAllowedAssignmentTarget(lhs)
 
     case ifThenElse@IfThenElse(cond, thenBr, elseBrOpt) =>
       val condType = checkExpr(cond)
@@ -813,14 +811,14 @@ final class TypeChecker(errorReporter: ErrorReporter)
     }
   }
 
-  private def checkIsAllowedAssignmentTarget(expr: Expr)(using tcCtx: TypeCheckingContext): Unit = {
-    val cd = expr.getType.captureDescriptor
-    if (tcCtx.environment.insideEnclosure && cd != Mark && cd != CaptureSet.empty) {
-      expr match {
+  private def checkIsAllowedAssignmentTarget(target: Expr, rhsType: Type)(using tcCtx: TypeCheckingContext): Unit = {
+    val cd = target.getType.captureDescriptor
+    if (tcCtx.environment.insideEnclosure && cd != Mark && !tcCtx.isProper(rhsType)) {
+      target match {
         // allow assignments to variables that have been declared in the current environment
         case VariableRef(name) if tcCtx.getLocalOnly(name).exists(_.declaringEnvir == tcCtx.environment) => ()
         case _ =>
-          reportError("illegal assignment: cannot prove that no value of a marked type is being leaked", expr.getPosition)
+          reportError("illegal assignment: cannot prove that no value of a marked type is being leaked", target.getPosition)
       }
     }
   }
