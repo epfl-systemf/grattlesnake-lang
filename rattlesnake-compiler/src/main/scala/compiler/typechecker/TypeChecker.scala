@@ -103,7 +103,9 @@ final class TypeChecker(errorReporter: ErrorReporter)
       }
       for (param@Param(paramNameOpt, typeTree, isReassignable) <- fields) {
         val tpe = checkType(typeTree, idsAreFields = true)(using tcCtx, langMode)
-        restrictRootCaptures(tpe, param.getPosition, isReassignable, "struct field")
+        if (isReassignable){
+          forbidRootCapture(tpe, "reassignable field", param.getPosition)
+        }
         paramNameOpt.foreach { paramName =>
           tcCtx.addLocal(paramName, tpe, param.getPosition, isReassignable, declHasTypeAnnot = true,
             duplicateVarCallback = { () =>
@@ -144,16 +146,10 @@ final class TypeChecker(errorReporter: ErrorReporter)
       }
   }
 
-  private def restrictRootCaptures(tpe: Type, posOpt: Option[Position], isReassignable: Boolean, typePosDescr: String): Unit = {
-    tpe match {
-      case CapturingType(shape, captureDescriptor) if captureDescriptor.coversRoot =>
-        if (isReassignable) {
-          reportError("vars are not allowed to capture the root capability", posOpt)
-        } else if (!isFirstGenerationCapability(shape)) {
-          reportError(s"type $tpe is not allowed in $typePosDescr position, as it captures the root capability", posOpt)
-        }
-      case _ => ()
-    }
+  private def forbidRootCapture(tpe: Type, typePosDescr: String, posOpt: Option[Position]): Unit = tpe match {
+    case CapturingType(shape, captureDescriptor) if captureDescriptor.coversRoot =>
+      reportError(s"type $tpe is forbidden in $typePosDescr position, as it captures the root capability", posOpt)
+    case _ => ()
   }
 
   private def isFirstGenerationCapability(shape: TypeShape): Boolean = shape match {
@@ -203,7 +199,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
     }
     val optRetType = optRetTypeTree.map(checkType(_, idsAreFields = false)(using tcCtx, langMode))
     val expRetType = optRetType.getOrElse(VoidType)
-    restrictRootCaptures(expRetType, funDef.getPosition, isReassignable = false, "function result")
+    forbidRootCapture(expRetType, "function return", funDef.getPosition)
     checkStat(body)(using tcCtx, langMode, expRetType)
     tcCtx.writeLocalsRelatedWarnings(errorReporter)
   }
@@ -224,7 +220,6 @@ final class TypeChecker(errorReporter: ErrorReporter)
   private def checkImport(imp: Import, tcCtx: TypeCheckingContext, langMode: LanguageMode): Unit = imp match {
     case modImp@ParamImport(paramName, paramType) =>
       val tpe = checkType(paramType, idsAreFields = true)(using tcCtx, langMode)
-      restrictRootCaptures(tpe, modImp.getPosition, isReassignable = false, "module import")
       tcCtx.addLocal(paramName, tpe, modImp.getPosition, isReassignable = false, declHasTypeAnnot = true,
         duplicateVarCallback = { () =>
           reportError(s"duplicated parameter: $paramName", modImp.getPosition)
@@ -431,8 +426,8 @@ final class TypeChecker(errorReporter: ErrorReporter)
           reportError(s"Please provide a type for uninitialized local $localName", localDef.getPosition)
         }
       if (isReassignable || rhsOpt.isEmpty) {
-        restrictRootCaptures(actualType, localDef.getPosition, isReassignable,
-          if isReassignable then "local var" else "uninitialized local val")
+        forbidRootCapture(actualType, if isReassignable then "var" else "uninitialized val",
+          localDef.getPosition)
       }
       localDef.setVarType(actualType)
       tcCtx.addLocal(localName, actualType, localDef.getPosition, isReassignable,
