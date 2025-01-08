@@ -663,14 +663,10 @@ final class TypeChecker(errorReporter: ErrorReporter)
                 regionOpt.get.getPosition
               )
             }
-            checkLangModeCompatibility(s"constructor of struct $tid", structSig.languageMode,
-              instantiation.getPosition)
             checkCallArgs(structSig, structSig.voidInitMethodSig, receiverOpt = None, regionOpt, args,
               isInstantiation = true, instantiation.getPosition)
             NamedTypeShape(tid) ^ computeCaptures(args, regionOpt, structSig)
           case Some(moduleSig: ModuleSignature) =>
-            checkLangModeCompatibility(s"constructor of module $tid", moduleSig.languageMode,
-              instantiation.getPosition)
             checkCallArgs(moduleSig, moduleSig.voidInitMethodSig, receiverOpt = None, regionOpt = None, args,
               isInstantiation = true, instantiation.getPosition)
             if (langMode.isOcapEnabled) {
@@ -872,7 +868,6 @@ final class TypeChecker(errorReporter: ErrorReporter)
           if ownerSig.id == IntrinsicsPackageId then None
           else Some(MeRef().setType(tcCtx.meType))
         }
-        checkLangModeCompatibility(s"function $funName", funSig.languageMode, call.getPosition)
         checkCallArgs(ownerSig, funSig, someReceiver, regionOpt = None, args, isInstantiation = false, pos)
       case ModuleNotFound =>
         args.foreach(checkExpr)
@@ -915,13 +910,6 @@ final class TypeChecker(errorReporter: ErrorReporter)
         if destType.subtypeOf(srcType) || srcType.subtypeOf(destType)
       => Some(destType)
       case _ => None
-    }
-  }
-
-  private def checkLangModeCompatibility(funDescription: String, calleeLangMode: LanguageMode, callPosOpt: Option[Position])
-                                        (using tcCtx: TypeCheckingContext, callerLangMode: LanguageMode): Unit = {
-    if (callerLangMode.isOcapEnabled && calleeLangMode.isOcapDisabled && !tcCtx.insideEnclosure) {
-      reportError(s"cannot call $funDescription in an unchecked environment, please use an enclosed block", callPosOpt)
     }
   }
 

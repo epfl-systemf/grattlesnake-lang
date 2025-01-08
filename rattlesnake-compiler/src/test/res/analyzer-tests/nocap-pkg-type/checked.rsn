@@ -1,0 +1,22 @@
+
+module Checked(#package Unchecked, #package Abc) {
+
+    fn foo() {
+        Unchecked.doDangerousThings();  //> E : Unchecked is not allowed in the current environment
+    }
+
+    fn getUnchecked() -> Unchecked {
+        return Unchecked;               //> E : Unchecked is not allowed in the current environment <//> E : returned value: expected 'Unchecked', found 'Unchecked^#'
+    }
+
+    fn bar() -> Bar {
+        return new Bar(100);            // OK (since structs provide no encapsulation)
+    }
+
+    fn abc() -> Abc {
+        restricted {Abc} {              //> E : Abc is not allowed in the current environment
+            return Abc;                 //> E : returned value: expected 'Abc', found 'Abc^#'
+        }
+    }
+
+}
