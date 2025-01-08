@@ -512,9 +512,6 @@ final class TypeChecker(errorReporter: ErrorReporter)
       valueOpt.foreach { value =>
         val retType = checkExpr(value)
         checkSubtypingConstraint(expRetType, retType, retStat.getPosition, "returned value")
-        if (tcCtx.insideEnclosure && !retType.isPure) {
-          reportError("cannot return a value of an impure type from inside an enclosure", retStat.getPosition)
-        }
       }
       if (expRetType == NothingType) {
         reportError(s"unexpected return in function returning $NothingType", retStat.getPosition)
