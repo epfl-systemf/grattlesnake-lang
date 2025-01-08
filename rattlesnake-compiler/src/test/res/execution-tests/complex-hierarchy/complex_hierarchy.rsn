@@ -93,7 +93,7 @@ package Test {
             panic "length mismatch"
         };
         for var idx = 0; idx < len actual; idx += 1 {
-            print(when actual[idx] == expected[idx] then "PASSED\n" else "FAILED\n")
+            console.print(when actual[idx] == expected[idx] then "PASSED\n" else "FAILED\n")
         }
     }
 

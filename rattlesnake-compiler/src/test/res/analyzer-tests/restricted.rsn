@@ -15,11 +15,12 @@ package Test {
             fs.openR("sysroot");    //> E : fs is not allowed in the current environment
             new@s S(80);            // OK
             new@r S(90);            //> E : r is not allowed in the current environment
+            console.readLine();     //> E : console is not allowed in the current environment
         }
     }
 
     fn myself() -> Test {
-        return me;          //> E : returned value: expected 'Test', found 'Test^{fs}'
+        return me;          //> E : returned value: expected 'Test', found 'Test^{console, fs}'
     }
 
 }

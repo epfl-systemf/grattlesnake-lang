@@ -8,10 +8,10 @@ package Test {
     }
 
     main fn test(arr String){
-        print(boolToString(isGreaterOrEqual([15.0, 11.0])) + "-");
-        print(boolToString(isGreaterOrEqual([11.0, 11.01])) + "-");
-        print(boolToString(isGreaterOrEqual([12.743, 12.743])) + "-");
-        print(boolToString(isGreaterOrEqual([12.743, 12.742])));
+        console.print(isGreaterOrEqual([15.0, 11.0]) as String + "-");
+        console.print(isGreaterOrEqual([11.0, 11.01]) as String + "-");
+        console.print(isGreaterOrEqual([12.743, 12.743]) as String + "-");
+        console.print(isGreaterOrEqual([12.743, 12.742]) as String);
     }
 
 }

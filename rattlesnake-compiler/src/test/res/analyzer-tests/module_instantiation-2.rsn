@@ -18,7 +18,7 @@ package Main {
         val s = newregion;
         val bar = new Bar(r, new@r Foo(99));
         val foo: Foo^{s} = bar.getFoo();    //> E : local definition: expected 'Foo^{s}', found 'Foo^{bar.rg}'
-        print(intToString(foo.i));
+        console.print(foo.i as String);
     }
 
 }

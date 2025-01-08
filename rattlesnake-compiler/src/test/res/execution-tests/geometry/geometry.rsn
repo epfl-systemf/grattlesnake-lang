@@ -37,12 +37,12 @@ package Test {
             printD(area);
             printD(rectangle.upperLeftCorner.x);
             printD(rectangle.upperLeftCorner.y);
-            print("---\n")
+            console.print("---\n")
         }
     }
 
     fn printD(x: Double){
-        print(doubleToString(x) + "\n")
+        console.print(x as String + "\n")
     }
 
 }

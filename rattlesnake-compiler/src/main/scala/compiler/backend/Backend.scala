@@ -43,6 +43,13 @@ final class Backend[V <: ClassVisitor](
                                         agentDirPath: Path
                                       ) extends CompilerStep[(List[Source], AnalysisContext), List[Path]] {
 
+  private val javaTypesMapping: Map[PrimitiveTypeShape, String] = Map(
+    IntType -> "Integer",
+    DoubleType -> "Double",
+    CharType -> "Character",
+    BoolType -> "Boolean"
+  )
+  
   private var lastWrittenLine = -1
 
   import Backend.*
@@ -459,8 +466,10 @@ final class Backend[V <: ClassVisitor](
         val descr = descriptorForType(packageShapeType)
         mv.visitFieldInsn(Opcodes.GETSTATIC, internalName, packageInstanceName, descr)
 
-      case DeviceRef(Device.FileSystem) =>
-        mv.visitFieldInsn(Opcodes.GETSTATIC, ClassesAndDirectoriesNames.fileSystemClassName, "$INSTANCE", "LFileSystem;")
+      case DeviceRef(device) =>
+        val className = device.typeName.stringId
+        val classDescr = s"L$className;"
+        mv.visitFieldInsn(Opcodes.GETSTATIC, className, "$INSTANCE", classDescr)
 
       case Call(_, funName, args, isTailrec) if isTailrec => {
         for (arg <- args) {
@@ -474,14 +483,7 @@ final class Backend[V <: ClassVisitor](
         mv.visitJumpInsn(Opcodes.GOTO, ctx.functionStartLabel)
       }
 
-      case Call(None, funName, args, isTailrec) => {
-        val generateArgs: () => Unit = { () =>
-          for arg <- args do {
-            generateCode(arg, ctx)
-          }
-        }
-        IntrinsicsImpl.intrinsicsMap.apply(funName)(generateArgs, mv)
-      }
+      case Call(None, funName, args, isTailrec) => shouldNotHappen()
 
       case Call(Some(receiver), funName, args, isTailrec) => {
         generateCode(receiver, ctx)
@@ -769,6 +771,11 @@ final class Backend[V <: ClassVisitor](
             case Some(TypeConversion.Double2Int) => mv.visitInsn(Opcodes.D2I)
             case Some(TypeConversion.IntToChar) => mv.visitInsn(Opcodes.I2C)
             case Some(TypeConversion.CharToInt) => ()
+            case Some(conv) =>
+              val javaType = javaTypesMapping.apply(conv.from)
+              val typeDescriptor = descriptorForType(conv.from)
+              mv.visitMethodInsn(Opcodes.INVOKESTATIC, s"java/lang/$javaType", "toString",
+                s"($typeDescriptor)Ljava/lang/String;", false)
             case None => mv.visitTypeInsn(Opcodes.CHECKCAST, internalNameOf(resolvedType.shape))
         }
       }
@@ -793,7 +800,9 @@ final class Backend[V <: ClassVisitor](
       case EnclosedStat(ExplicitCaptureSetTree(capturedExpressions), body) =>
         RuntimeMethod.StartPreparingEnvir.generateCall(mv)
         capturedExpressions.foreach {
-          case DeviceRef(FileSystem) =>
+          case DeviceRef(Device.Console) =>
+            RuntimeMethod.AllowConsole.generateCall(mv)
+          case DeviceRef(Device.FileSystem) =>
             RuntimeMethod.AllowFilesystem.generateCall(mv)
           case capExpr =>
             generateCode(capExpr, ctx)

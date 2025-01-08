@@ -9,7 +9,7 @@ package Test {
     main fn testF(arr String) {
       val a = arr arr Cell[1];
       a[0] = [new Cell(42)];
-      print(intToString(a[0][0].content));
+      console.print(a[0][0].content as String);
     }
 
 }

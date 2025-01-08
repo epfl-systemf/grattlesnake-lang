@@ -18,7 +18,7 @@ package Main {
             val c = fs.read(file);
             stop = c == -1;
             if !stop {
-                print(charToString(c as Char));
+                console.print((c as Char) as String);
             };
         };
         fs.close(file);

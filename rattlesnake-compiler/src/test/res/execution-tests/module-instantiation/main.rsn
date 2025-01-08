@@ -17,7 +17,7 @@ package Main {
         val r = newregion;
         val bar = new Bar(r, new@r Foo(99));
         val foo: Foo^{r} = bar.getFoo();
-        print(intToString(foo.i));
+        console.print(foo.i as String);
     }
 
 }

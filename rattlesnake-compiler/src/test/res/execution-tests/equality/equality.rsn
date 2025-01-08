@@ -18,7 +18,7 @@ package Test {
     }
 
     fn printBool(b: Bool){
-        print(boolToString(b) + "\n");
+        console.print(b as String + "\n");
     }
 
 }

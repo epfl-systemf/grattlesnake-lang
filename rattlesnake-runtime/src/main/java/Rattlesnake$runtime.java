@@ -26,12 +26,18 @@ public final class Rattlesnake$runtime {
 
     private static final class DynamicEnvironment {
         private boolean fileSystem = false;
+        private boolean console = false;
         private final IntSet regions = new IntOpenHashSet();
         private DynamicEnvironment next = null;
     }
 
     public static void startPreparingEnvir() {
         inPrepEnvir = new DynamicEnvironment();
+    }
+
+    public static void allowConsole(){
+        assertConsoleAllowed();
+        inPrepEnvir.console = true;
     }
 
     public static void allowFilesystem() {
@@ -52,6 +58,13 @@ public final class Rattlesnake$runtime {
 
     public static void popEnvir() {
         currentEnvir = currentEnvir.next;
+    }
+
+    public static void assertConsoleAllowed() {
+        if (currentEnvir != null && !currentEnvir.console){
+            throw new Rattlesnake$IllegalCapabilityUseError(
+                    "illegal use of the console in a dynamically restricted environment");
+        }
     }
 
     public static void assertFileSystemAllowed() {

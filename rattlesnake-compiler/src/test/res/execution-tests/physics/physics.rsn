@@ -7,7 +7,7 @@ package Test {
         val a = -7.32;
         val t = 315.49;
         val x = 1.0/2.0 * a*t*t - v0*(-t) + x0;
-        print(doubleToString(x));
+        console.print(x as String);
     }
 
 }

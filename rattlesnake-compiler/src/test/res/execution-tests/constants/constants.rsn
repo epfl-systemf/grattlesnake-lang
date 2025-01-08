@@ -16,10 +16,10 @@ package Test {
     }
     
     main fn test(arr String){
-        print(testFunc([41]) + "\n");
-        print(testFunc([807]) + "\n");
-        print(testFunc([553]) + "\n");
-        print(testFunc([552]) + "\n");
+        console.print(testFunc([41]) + "\n");
+        console.print(testFunc([807]) + "\n");
+        console.print(testFunc([553]) + "\n");
+        console.print(testFunc([552]) + "\n");
     }
 
 }

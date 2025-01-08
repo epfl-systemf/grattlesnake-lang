@@ -1,7 +1,7 @@
 package compiler.backend
 
 import compiler.analysisctx.AnalysisContext
-import identifiers.{FunOrVarId, IntrinsicsPackageId, NormalTypeId, TypeIdentifier}
+import identifiers.FunOrVarId
 import lang.*
 import lang.Types.{PrimitiveTypeShape, Type, TypeShape}
 

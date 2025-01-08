@@ -4,6 +4,7 @@ enum Keyword(val str: String) {
   case Arr extends Keyword("arr")
   case As extends Keyword("as")
   case Cap extends Keyword("cap")
+  case Console extends Keyword("console")
   case Const extends Keyword("const")
   case Device extends Keyword("device")
   case Else extends Keyword("else")

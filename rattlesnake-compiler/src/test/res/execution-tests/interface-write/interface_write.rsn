@@ -24,7 +24,7 @@ package Test {
         var t = a.x;
         me.mulX(s, a, 32);
         t -= a.x;
-        print(intToString(t));
+        console.print(t as String);
     }
 
 }

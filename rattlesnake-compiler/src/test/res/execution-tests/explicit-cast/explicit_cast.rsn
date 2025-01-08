@@ -22,8 +22,8 @@ package Test {
         me.setX(r, b);
         s += me.readY(b as Sub);    // s: "Hello Hello"
         s += " ";                   // s: "Hello Hello "
-        s += intToString(a.x);   // s: "Hello Hello 42"
-        print(s);
+        s += a.x as String;         // s: "Hello Hello 42"
+        console.print(s);
     }
 
     fn setX(r: Region^, s: Super^{r}){

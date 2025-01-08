@@ -13,7 +13,7 @@ package Test {
             new Leaf(4)
         );
         val sum = Trees.sum(tree);
-        print(intToString(sum));
+        console.print(sum as String);
     }
     
 }

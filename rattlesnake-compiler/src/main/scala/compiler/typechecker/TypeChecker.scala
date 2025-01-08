@@ -590,13 +590,16 @@ final class TypeChecker(errorReporter: ErrorReporter)
         device.tpe
 
       case call@Call(None, funName, args, isTailrec) =>
-        val fallbackOwnerOpt = if tcCtx.currentModuleIsPackage then Some(tcCtx.meTypeId) else None
-        checkFunCall(call, IntrinsicsPackageId, fallbackOwnerOpt, isTailrec)
+        if (tcCtx.currentModuleIsPackage){
+          checkFunCall(call, tcCtx.meTypeId, isTailrec)
+        } else {
+          reportError(s"calls inside modules need a receiver (use ${Keyword.Me} to refer to the current module)", call.getPosition)
+        }
 
       case call@Call(Some(receiver), funName, args, isTailrec) =>
         checkExpr(receiver).shape match {
           case namedType: NamedTypeShape =>
-            checkFunCall(call, namedType.typeName, None, isTailrec)
+            checkFunCall(call, namedType.typeName, isTailrec)
           case recType =>
             reportError(s"expected a module or package type, found $recType", receiver.getPosition)
         }
@@ -843,12 +846,8 @@ final class TypeChecker(errorReporter: ErrorReporter)
     }
   }
 
-  private def checkFunCall(
-                            call: Call,
-                            owner: TypeIdentifier,
-                            fallbackOwnerOpt: Option[TypeIdentifier],
-                            isTailrec: Boolean
-                          )(using tcCtx: TypeCheckingContext, langMode: LanguageMode): Type = {
+  private def checkFunCall(call: Call, owner: TypeIdentifier, isTailrec: Boolean)
+                          (using tcCtx: TypeCheckingContext, langMode: LanguageMode): Type = {
     val funName = call.function
     val args = call.args
     val pos = call.getPosition
@@ -859,21 +858,14 @@ final class TypeChecker(errorReporter: ErrorReporter)
         }
         call.setResolvedSig(funSig)
         call.cacheMeType(tcCtx.meType)
-        val someReceiver = call.receiverOpt.orElse {
-          if ownerSig.id == IntrinsicsPackageId then None
-          else Some(MeRef().setType(tcCtx.meType))
-        }
-        checkCallArgs(ownerSig, funSig, someReceiver, regionOpt = None, args, isInstantiation = false, pos)
+        val receiver = call.receiverOpt.getOrElse(MeRef().setType(tcCtx.meType))
+        checkCallArgs(ownerSig, funSig, Some(receiver), regionOpt = None, args, isInstantiation = false, pos)
       case ModuleNotFound =>
         args.foreach(checkExpr)
         reportError(s"not found: package or module $owner", pos)
       case FunctionNotFound(typeSig) =>
-        fallbackOwnerOpt map { fallbackOwner =>
-          checkFunCall(call, fallbackOwner, None, isTailrec)
-        } getOrElse {
-          args.foreach(checkExpr)
-          reportError(s"function not found: '$funName' in '${typeSig.id}'", pos)
-        }
+        args.foreach(checkExpr)
+        reportError(s"function not found: '$funName' in '${typeSig.id}'", pos)
     }
   }
 

@@ -6,14 +6,14 @@ import lang.Types.PrimitiveTypeShape.{BoolType, IntType, StringType, VoidType}
 
 object FileSystemApi extends Device.DeviceApi {
 
-  val openR: NormalFunOrVarId = NormalFunOrVarId("openR")
-  val openW: NormalFunOrVarId = NormalFunOrVarId("openW")
-  val openA: NormalFunOrVarId = NormalFunOrVarId("openA")
-  val write: NormalFunOrVarId = NormalFunOrVarId("write")
-  val read: NormalFunOrVarId = NormalFunOrVarId("read")
-  val close: NormalFunOrVarId = NormalFunOrVarId("close")
-  val createDir: NormalFunOrVarId = NormalFunOrVarId("createDir")
-  val delete: NormalFunOrVarId = NormalFunOrVarId("delete")
+  val openR: FunOrVarId = NormalFunOrVarId("openR")
+  val openW: FunOrVarId = NormalFunOrVarId("openW")
+  val openA: FunOrVarId = NormalFunOrVarId("openA")
+  val write: FunOrVarId = NormalFunOrVarId("write")
+  val read: FunOrVarId = NormalFunOrVarId("read")
+  val close: FunOrVarId = NormalFunOrVarId("close")
+  val createDir: FunOrVarId = NormalFunOrVarId("createDir")
+  val delete: FunOrVarId = NormalFunOrVarId("delete")
 
 
   override def functions: Map[FunOrVarId, FunctionSignature] = Map(

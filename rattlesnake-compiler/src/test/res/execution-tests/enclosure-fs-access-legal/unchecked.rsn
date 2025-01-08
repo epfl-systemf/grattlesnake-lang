@@ -10,7 +10,7 @@ package Untrusted {
             val c = fs.read(file);
             stop = c == -1;
             if !stop {
-                s += charToString(c as Char);
+                s += (c as Char) as String;
             }
         };
         fs.close(file);

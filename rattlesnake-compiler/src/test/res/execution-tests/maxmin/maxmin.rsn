@@ -18,7 +18,7 @@ package Test {
     }
 
     fn printD(d: Double){
-        print(doubleToString(d) + "\n");
+        console.print(d as String + "\n");
     }
 
 }

@@ -15,9 +15,9 @@ package Test {
 
     fn printArrayWeird(chars: arr^ Char){
         for var i = 0; i < len chars; i += 1 {
-            print(charToString(chars[i]));
+            console.print(chars[i] as String);
             if i < len chars - 1 && (chars[i] as Int) >= ('a' as Int) && chars[i] != 's' {
-                print(" ");
+                console.print(" ");
             }
         }
     }

@@ -9,7 +9,7 @@ package Test {
         for var k = 0; k < len array; k += 1 {
             me.add(counter, array[k]);
         };
-        print(Counters.counterToString(counter));
+        console.print(Counters.counterToString(counter));
     }
     
     fn add(counter: Counter, n: Int){
@@ -30,7 +30,7 @@ mut struct Counter {
 package Counters {
 
     fn counterToString(counter: Counter) -> String {
-        return intToString(counter.evens) + " evens and " + intToString(counter.odds) + " odds";
+        return counter.evens as String + " evens and " + counter.odds as String + " odds";
     }
 
 }

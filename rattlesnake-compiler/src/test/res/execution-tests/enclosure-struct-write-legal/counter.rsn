@@ -7,7 +7,7 @@ mut struct Counter {
 package Counters {
 
     fn toString(cnt: Counter^) -> String {
-        return intToString(cnt.evens) + " evens, " + intToString(cnt.odds) + " odds";
+        return cnt.evens as String + " evens, " + cnt.odds as String + " odds";
     }
 
 }

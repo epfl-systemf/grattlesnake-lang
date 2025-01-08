@@ -7,11 +7,11 @@ package Test {
         if x == 0 {
             t = 42;
         } else {
-            print("Hello");
+            console.print("Hello");
         };
-        print(intToString(t));  //> E : cannot prove that 't' has been initialized
+        console.print(t as String);  //> E : cannot prove that 't' has been initialized
         t = 75;
-        print(intToString(t));
+        console.print(t as String);
     }
 
     fn bar(r: Region^, b1: Bool, b2: Bool) -> R^{r} {

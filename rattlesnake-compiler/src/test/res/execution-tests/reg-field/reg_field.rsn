@@ -5,15 +5,15 @@ package Main {
         val r = newregion;
         val a = arr@r Int[10];
         val fooStruct: Foo^{a.reg} = new@a.reg Foo(42);
-        print(boolToString(a.reg == fooStruct.reg));
-        print(" - ");
+        console.print((a.reg == fooStruct.reg) as String);
+        console.print(" - ");
         foo(fooStruct);
     }
 
     fn foo(f1: Foo^){
         val r = newregion;
         val f2 = new@r Foo(84);
-        print(boolToString(f2.reg == f1.reg));
+        console.print((f2.reg == f1.reg) as String);
     }
 
 }

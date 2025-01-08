@@ -21,7 +21,7 @@ package Test {
         if len a != 3 {
             panic "bad length";
         };
-        print(intToString(a[0]) + ", " + intToString(a[1]) + ", " + intToString(a[2]));
+        console.print(a[0] as String + ", " + a[1] as String + ", " + a[2] as String);
     }
     
 }

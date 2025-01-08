@@ -5,8 +5,10 @@ import lang.CaptureDescriptors.CaptureSet
 import lang.Types.{NamedTypeShape, Type}
 
 enum Device(val keyword: Keyword, val typeName: TypeIdentifier, val api: Device.DeviceApi) {
+  
+  case Console extends Device(Keyword.Console, NormalTypeId("Console"), ConsoleApi)
   case FileSystem extends Device(Keyword.Fs, NormalTypeId("FileSystem"), FileSystemApi)
-
+  
   def tpe: Type = NamedTypeShape(typeName) ^ CaptureSet.singletonOfRoot
   
   override def toString: String = keyword.str

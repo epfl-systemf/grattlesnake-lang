@@ -5,9 +5,9 @@ import compiler.irs.Asts.*
 import compiler.pipeline.CompilerStep
 import compiler.reporting.Position
 import lang.Operator.*
+import lang.Types
 import lang.Types.*
 import lang.Types.PrimitiveTypeShape.*
-import lang.{Intrinsics, Types}
 
 /**
  * Lowering replaces (this list may not be complete):
@@ -252,12 +252,10 @@ final class Lowerer extends CompilerStep[(List[Source], AnalysisContext), (List[
   }
 
   private def lower(call: Call): Call = propagatePosition(call.getPosition){
-    val loweredReceiverOpt = call.receiverOpt.map(lower).orElse {
-      if Intrinsics.intrinsics.contains(call.getSignatureOpt.get.name)
-      then None
-      else Some(MeRef().setTypeOpt(call.getMeTypeOpt))
-    }
-    val loweredCall = Call(loweredReceiverOpt, call.function, call.args.map(lower), call.isTailrec)
+    val loweredReceiver =
+      call.receiverOpt.map(lower)
+        .getOrElse(MeRef().setTypeOpt(call.getMeTypeOpt))
+    val loweredCall = Call(Some(loweredReceiver), call.function, call.args.map(lower), call.isTailrec)
     loweredCall.setResolvedSigOpt(call.getSignatureOpt)
     loweredCall.setTypeOpt(call.getTypeOpt)
     loweredCall

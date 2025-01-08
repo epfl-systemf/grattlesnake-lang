@@ -8,7 +8,7 @@ import compiler.reporting.Position
 import compiler.typechecker.SubtypeRelation.subtypeOf
 import compiler.typechecker.TypeCheckingContext
 import identifiers.SpecialFields.regFieldId
-import identifiers.{FunOrVarId, IntrinsicsPackageId, SpecialFields, TypeIdentifier}
+import identifiers.{FunOrVarId, SpecialFields, TypeIdentifier}
 import lang.*
 import lang.Capturables.*
 import lang.CaptureDescriptors.{CaptureDescriptor, CaptureSet, Mark}
@@ -20,23 +20,16 @@ import scala.collection.mutable
 
 final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
   private val modules: mutable.Map[TypeIdentifier, ModuleSignature] = mutable.Map.empty
-  private val packages: mutable.Map[TypeIdentifier, PackageSignature] = mutable.Map(
-    IntrinsicsPackageId -> PackageSignature(
-      id = IntrinsicsPackageId,
-      importedPackages = mutable.LinkedHashSet.empty,
-      importedDevices = mutable.LinkedHashSet.empty,
-      functions = Intrinsics.intrinsics,
-      languageMode = OcapEnabled
-    )
-  ) ++ Device.values.map { device =>
-    device.typeName -> PackageSignature(
-      id = device.typeName,
-      importedPackages = mutable.LinkedHashSet.empty,
-      importedDevices = mutable.LinkedHashSet.empty,
-      functions = device.api.functions,
-      languageMode = OcapEnabled
-    )
-  }
+  private val packages: mutable.Map[TypeIdentifier, PackageSignature] =
+    mutable.Map.from(Device.values.map { device =>
+      device.typeName -> PackageSignature(
+        id = device.typeName,
+        importedPackages = mutable.LinkedHashSet.empty,
+        importedDevices = mutable.LinkedHashSet.empty,
+        functions = device.api.functions,
+        languageMode = OcapEnabled
+      )
+    })
   private val structs: mutable.Map[TypeIdentifier, (StructSignature, Option[Position])] = mutable.Map.empty
   private val constants: mutable.Map[FunOrVarId, Type] = mutable.Map.empty
 
@@ -71,7 +64,7 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
         if structDef.isInterface
         then Some(mutable.LinkedHashSet.empty[TypeIdentifier])
         else None
-      val sig = StructSignature(name, structDef.isShallowMutable, fieldsMap, structDef.directSupertypes, 
+      val sig = StructSignature(name, structDef.isShallowMutable, fieldsMap, structDef.directSupertypes,
         directSubtypesOpt, langMode)
       structs.put(name, (sig, structDef.getPosition))
     }
@@ -261,7 +254,7 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
           } else {
             directSupertypeSig.directSubtypesOpt.foreach(_.add(structId))
           }
-          if (!structSig.isShallowMutable && directSupertypeSig.isShallowMutable){
+          if (!structSig.isShallowMutable && directSupertypeSig.isShallowMutable) {
             reportError(s"immutable $structId cannot be a subtype of mutable $directSupertypeId", structDefPosOpt)
           }
           if (directSupertypeSig.isInterface) {

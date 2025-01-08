@@ -11,7 +11,7 @@ package Main {
 
     main fn main_(arr String){
         val max = testF();
-        print(intToString(max));
+        console.print(max as String);
     }
 
     fn max(array: arr^ Int) -> Int {

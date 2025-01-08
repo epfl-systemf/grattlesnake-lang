@@ -26,21 +26,21 @@ package Test {
         val b: Super = a;
         var s = readY(a) + " ";     // s: "Hello "
         val e = a as String;  //> E : cannot cast 'Sub' to 'String'
-        print(e);
+        console.print(e);
         val f = a as Super;   //> W : useless conversion: 'Sub' --> 'Super'
         setX(f);
         val aPrime: Sub = a;
         val bPrime: Super = b;
         val g = aPrime as Indep;   //> E : cannot cast 'Sub' to 'Indep'
         val h = bPrime as Indep;   //> E : cannot cast 'Super' to 'Indep'
-        print(boolToString(g == h));
+        console.print((g == h) as String);
         val i = aPrime as I;    //> E : cannot cast 'Sub' to 'I'
         val j = bPrime as I;    //> E : cannot cast 'Super' to 'I'
-        print(boolToString(i == j));
+        console.print((i == j) as String);
         setX(b);
         s += readY(b as Sub);       // s: "Hello Hello"
         s += " ";                   // s: "Hello Hello "
-        s += intToString(a.x);      // s: "Hello Hello 42"
+        s += a.x as String;         // s: "Hello Hello 42"
         return s;
     }
 

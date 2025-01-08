@@ -32,7 +32,7 @@ package Test {
     }
 
     fn printI(i: Int){
-        print(intToString(i) + "\n");
+        console.print(i as String + "\n");
     }
 
 }

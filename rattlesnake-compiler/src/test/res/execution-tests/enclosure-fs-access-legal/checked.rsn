@@ -10,10 +10,10 @@ package Main {
         var lineStart = true;
         for var ci = 0; ci < len text; ci += 1 {
             if lineStart {
-                print("Line " + intToString(line) + ": ");
+                console.print("Line " + line as String + ": ");
                 lineStart = false;
             };
-            print(charToString(text[ci]));
+            console.print(text[ci] as String);
             if text[ci] == '\n' {
                 lineStart = true;
                 line += 1;

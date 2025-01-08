@@ -9,7 +9,7 @@ package Main {
         enclosed {cntReg} {
             Untrusted.countOddsAndEvens(#ls, #counter);   //>STACKTRACE
         };
-        print(Counters.toString(counter));
+        console.print(Counters.toString(counter));
     }
 
 }

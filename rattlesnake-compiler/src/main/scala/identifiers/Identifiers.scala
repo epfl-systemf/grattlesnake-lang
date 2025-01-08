@@ -39,7 +39,3 @@ object BackendGeneratedVarId {
 case object MeVarId extends FunOrVarId {
   override def stringId: String = "me"
 }
-
-case object IntrinsicsPackageId extends TypeIdentifier {
-  override def stringId: String = "pkg$intrinsics"
-}

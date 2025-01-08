@@ -25,7 +25,7 @@ package Test {
             var maxIdx: Int = firstIdx;
             for val length: Char = len array, var i = firstIdx + 1; i < length; i += 1 {  //> E@col=17 : local definition: expected 'Char', found 'Int'
                 if array[i] > array[maxIdx] {
-                    maxIdx = intToString(i);    //> E : expected 'Int', found 'String'
+                    maxIdx = i as String;    //> E : expected 'Int', found 'String'
                 }
             };
             return maxIdx
@@ -40,8 +40,8 @@ package Test {
         };
         selectionSort(["abcdefghijk"]); //> E@col=23 : expected 'arr Int', found 'arr String'
         for var i = 0; i < 10; i += 1 {
-            print(intToString(nbs[i]));
-            print(" ")
+            console.print(nbs[i] as String);
+            console.print(" ")
         }
     }
 

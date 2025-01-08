@@ -9,7 +9,6 @@ object ClassesAndDirectoriesNames {
   val packageInstanceName: String = "$INSTANCE"
   
   val runtimeClassName: String = "Rattlesnake$runtime"
-  val fileSystemClassName: String = Device.FileSystem.typeName.stringId
   
   val outDirName: String = "out"
   val agentSubdirName: String = "agent"

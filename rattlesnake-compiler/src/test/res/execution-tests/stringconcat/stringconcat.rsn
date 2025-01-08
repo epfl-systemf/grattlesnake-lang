@@ -6,9 +6,9 @@ package Test {
     }
 
     main fn test(arr String){
-        print(testF("foo", "bar") + "\n");
-        print(testF("programming", "language") + "\n");
-        print(testF("baz", "") + ";");
+        console.print(testF("foo", "bar") + "\n");
+        console.print(testF("programming", "language") + "\n");
+        console.print(testF("baz", "") + ";");
     }
 
 }

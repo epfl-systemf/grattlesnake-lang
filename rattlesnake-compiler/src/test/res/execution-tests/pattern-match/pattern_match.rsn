@@ -25,7 +25,7 @@ package Main {
             new Leaf(8)
         );
         val s = sum(tree);
-        print(intToString(s));
+        console.print(s as String);
     }
 
 }

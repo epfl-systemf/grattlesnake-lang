@@ -27,7 +27,7 @@ package Test {
 
     main fn test(arr String){
         for var i = -100; i < 120; i += 1 {
-            print(intToString(f(i)) + "\n");
+            console.print(f(i) as String + "\n");
         }
     }
 
