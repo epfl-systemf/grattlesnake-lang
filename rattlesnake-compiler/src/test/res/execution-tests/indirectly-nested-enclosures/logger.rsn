@@ -1,5 +1,5 @@
 
-module Logger(logFileName: String, package UnsafeLoggers, device fs){
+module Logger(logFileName: String, #package UnsafeLoggers, device fs){
 
     fn log(msg: String){
         enclosed {fs} {   //>STACKTRACE

@@ -148,7 +148,10 @@ final class PrettyPrinter(indentGranularity: Int = 2, displayAllParentheses: Boo
           .add(": ")
         addAst(paramTypeTree)
 
-      case PackageImport(packageId) =>
+      case PackageImport(packageId, isMarked) =>
+        if (isMarked){
+          pps.add("#")
+        }
         pps
           .add(Package.str)
           .addSpace()

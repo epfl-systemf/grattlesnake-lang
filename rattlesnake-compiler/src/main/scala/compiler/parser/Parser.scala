@@ -128,7 +128,10 @@ final class Parser(errorReporter: ErrorReporter) extends CompilerStep[(List[Posi
   } setName "moduleImport"
 
   private lazy val packageImport = {
-    kw(Package).ignored ::: highName map (PackageImport(_))
+    opt(op(Sharp)) ::: kw(Package).ignored ::: highName map {
+      case optSharp ^: pkgId =>
+        PackageImport(pkgId, optSharp.isDefined)
+    }
   } setName "packageImport"
 
   private lazy val deviceImport = kw(Keyword.Device).ignored ::: device map {

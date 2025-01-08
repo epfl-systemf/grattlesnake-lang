@@ -157,7 +157,7 @@ object Asts {
     override def children: List[Ast] = List(paramType)
   }
 
-  final case class PackageImport(packageId: TypeIdentifier) extends Import {
+  final case class PackageImport(packageId: TypeIdentifier, isMarked: Boolean) extends Import {
     override def children: List[Ast] = Nil
   }
 

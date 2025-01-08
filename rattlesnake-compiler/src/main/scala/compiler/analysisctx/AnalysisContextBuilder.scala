@@ -159,7 +159,7 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
     moduleDef.imports.foreach {
       case ParamImport(instanceId, moduleType) =>
         importsMap.put(instanceId, computeType(moduleType, idsAreFields = true))
-      case PackageImport(packageId) =>
+      case PackageImport(packageId, _) =>
         packagesSet.add(packageId)
       case DeviceImport(device) =>
         devicesSet.add(device)

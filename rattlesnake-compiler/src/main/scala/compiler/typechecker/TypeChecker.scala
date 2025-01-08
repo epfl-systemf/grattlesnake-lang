@@ -233,9 +233,14 @@ final class TypeChecker(errorReporter: ErrorReporter)
           reportError(s"module $paramName has type $paramType, which is forbidden", modImp.getPosition)
         }
       )
-    case pkgImp@PackageImport(packageId) =>
-      if (tcCtx.resolveTypeAs[PackageSignature](packageId).isEmpty) {
-        reportError(s"unknown package: $packageId", imp.getPosition)
+    case pkgImp@PackageImport(packageId, isMarked) =>
+      tcCtx.resolveTypeAs[PackageSignature](packageId) match {
+        case None =>
+          reportError(s"unknown package: $packageId", imp.getPosition)
+        case Some(PackageSignature(id, importedPackages, importedDevices, functions, languageMode))
+          if languageMode.isOcapDisabled && !isMarked =>
+          reportError(s"imported nocap packages must be marked $Sharp${Keyword.Package} $id", pkgImp.getPosition)
+        case _ => ()
       }
     case DeviceImport(device) => ()
   }
