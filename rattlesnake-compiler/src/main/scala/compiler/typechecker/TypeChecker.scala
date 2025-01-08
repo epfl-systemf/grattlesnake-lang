@@ -668,6 +668,10 @@ final class TypeChecker(errorReporter: ErrorReporter)
               instantiation.getPosition)
             checkCallArgs(moduleSig, moduleSig.voidInitMethodSig, receiverOpt = None, regionOpt = None, args,
               isInstantiation = true, instantiation.getPosition)
+            if (langMode.isOcapEnabled) {
+              moduleSig.importedPackages.foreach(pkgId => checkIsAllowedInCurrentEnvir(CapPackage(pkgId), instantiation.getPosition))
+              moduleSig.importedDevices.foreach(device => checkIsAllowedInCurrentEnvir(CapDevice(device), instantiation.getPosition))
+            }
             checkImplicitImportsAreAllowed(moduleSig.importedPackages, tcCtx.isImported, "package", tid,
               instantiation.getPosition)
             checkImplicitImportsAreAllowed(moduleSig.importedDevices, tcCtx.isImported, "device", tid,

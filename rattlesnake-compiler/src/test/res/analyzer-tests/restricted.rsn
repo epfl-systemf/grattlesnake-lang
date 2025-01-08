@@ -1,0 +1,35 @@
+
+package Test {
+
+    fn test() {
+        val lib1_1 = new Lib1();      // OK
+        val lib1_2 = new Lib1();      // OK
+        val r = newregion;
+        val s = newregion;
+        restricted {s, lib1_2} {
+            new Lib1();             //> E : fs is not allowed in the current environment
+            val lib2 = new Lib2();  // OK
+            lib1_1.doSomething();   //> E : lib1_1 is not allowed in the current environment
+            lib1_2.doSomething();   // OK
+            lib2.doSomething();     // OK
+            fs.openR("sysroot");    //> E : fs is not allowed in the current environment
+            new@s S(80);            // OK
+            new@r S(90);            //> E : r is not allowed in the current environment
+        }
+    }
+
+    fn myself() -> Test {
+        return me;          //> E : returned value: expected 'Test', found 'Test^{fs}'
+    }
+
+}
+
+module Lib1(device fs) {
+    fn doSomething(){}
+}
+
+module Lib2() {
+    fn doSomething(){}
+}
+
+mut struct S { i: Int }
