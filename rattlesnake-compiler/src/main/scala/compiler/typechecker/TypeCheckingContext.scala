@@ -89,7 +89,7 @@ final case class TypeCheckingContext private(
     )
   }
 
-  def isInhabitedForSureWhenNoCaptureDescr(shape: TypeShape): Boolean = shape match {
+  def isUninhabitedForSureWhenNoCaptureDescr(shape: TypeShape): Boolean = shape match {
     case RegionType => true
     case NamedTypeShape(typeName) =>
       resolveTypeAs[StructSignature](typeName) match {

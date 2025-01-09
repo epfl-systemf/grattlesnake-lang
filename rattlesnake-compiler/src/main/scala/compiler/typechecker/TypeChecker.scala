@@ -326,7 +326,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         }
         NamedTypeShape(name)
     }
-    if (shapePos == OutsideCapturingType && langMode.isOcapEnabled && tcCtx.isInhabitedForSureWhenNoCaptureDescr(shape)) {
+    if (shapePos == OutsideCapturingType && langMode.isOcapEnabled && tcCtx.isUninhabitedForSureWhenNoCaptureDescr(shape)) {
       reportError(s"type is not inhabited: $shape should have a capture descriptor",
         castTargetTypeShapeTree.getPosition, isWarning = true)
     } else if (shapePos == InsideCapturingType && langMode.isOcapEnabled && tcCtx.neverNeedsCapDescr(shape)) {
