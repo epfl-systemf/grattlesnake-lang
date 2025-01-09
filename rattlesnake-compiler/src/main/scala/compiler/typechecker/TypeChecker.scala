@@ -602,11 +602,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         device.tpe
 
       case call@Call(None, funName, args, isTailrec) =>
-        if (tcCtx.currentModuleIsPackage){
-          checkFunCall(call, tcCtx.meTypeId, isTailrec)
-        } else {
-          reportError(s"calls inside modules need a receiver (use ${Keyword.Me} to refer to the current module)", call.getPosition)
-        }
+        checkFunCall(call, tcCtx.meTypeId, isTailrec)
 
       case call@Call(Some(receiver), funName, args, isTailrec) =>
         checkExpr(receiver).shape match {
