@@ -117,10 +117,7 @@ final class Backend[V <: ClassVisitor](
   }
 
   private def copyJar(srcDirPath: Path, jarNamePrefix: String, destDirPath: Path): Unit = try {
-    val jarFileName =
-      srcDirPath.toFile.list()
-        .find(f => f.startsWith(jarNamePrefix) && f.endsWith("with-dependencies.jar"))
-        .get
+    val jarFileName = JarFinder.findNameOfJarInDir(srcDirPath.toFile, jarNamePrefix).get
     val jarSrcFilePath = srcDirPath.resolve(jarFileName)
     val jarDestFilePath = destDirPath.resolve(jarFileName)
     Files.createDirectories(destDirPath)

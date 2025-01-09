@@ -1,7 +1,7 @@
 package compiler
 
 import compiler.ExecutionTests.*
-import compiler.TestRuntimePaths.{agentTargetDirPath, runtimeTargetDirPath}
+import compiler.TestRuntimePaths.jarsDir
 import compiler.gennames.FileExtensions
 import compiler.io.SourceFile
 import compiler.pipeline.TasksPipelines
@@ -62,7 +62,7 @@ class ExecutionTests(programDirName: String) {
 
     val writtenFilePaths = try {
       TasksPipelines
-        .compiler(testOutSubdirPath, javaVersionCode, runtimeTargetDirPath, agentTargetDirPath, er)
+        .compiler(testOutSubdirPath, javaVersionCode, jarsDir, jarsDir, er)
         .apply(srcFiles)
     } catch {
       case e: Throwable =>

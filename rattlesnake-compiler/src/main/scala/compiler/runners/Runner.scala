@@ -1,5 +1,6 @@
 package compiler.runners
 
+import compiler.backend.JarFinder
 import compiler.gennames.ClassesAndDirectoriesNames.{agentSubdirName, outDirName}
 
 import java.io.File
@@ -36,7 +37,7 @@ final class Runner(errorCallback: String => Nothing, workingDirectoryPath: Path)
   }
 
   private def findNameOfJarInDir(dir: File, jarNamePrefix: String, errorMsg: String): String = {
-    dir.list().find(f => f.startsWith(jarNamePrefix) && f.endsWith("with-dependencies.jar"))
+    JarFinder.findNameOfJarInDir(dir, jarNamePrefix)
       .getOrElse {
         errorCallback(errorMsg)
       }
