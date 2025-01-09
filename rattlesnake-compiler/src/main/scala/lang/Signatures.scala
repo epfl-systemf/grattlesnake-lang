@@ -83,14 +83,13 @@ final case class ModuleSignature(
                                   paramImports: mutable.LinkedHashMap[FunOrVarId, Type],
                                   importedPackages: mutable.LinkedHashSet[TypeIdentifier],
                                   importedDevices: mutable.LinkedHashSet[Device],
-                                  functions: Map[FunOrVarId, FunctionSignature]
+                                  functions: Map[FunOrVarId, FunctionSignature],
+                                  languageMode: LanguageMode
                                 )
   extends TypeSignature, ConstructibleSig, UserConstructibleSig, ImporterSig, SelectableSig, FunctionsProviderSig {
 
   override def getNonSubstitutedCaptureDescr: CaptureDescriptor =
     CaptureSet(globalCaptures ++ paramImports.map((paramId, _) => MePath.dot(paramId)))
-
-  override def languageMode: LanguageMode = OcapEnabled
 
   override def isAbstract: Boolean = false
 }

@@ -76,11 +76,11 @@ final class TypeChecker(errorReporter: ErrorReporter)
         currentRestriction = CaptureSet.singletonOfRoot
       )
       for imp <- imports do {
-        checkImport(imp, importsCtx, OcapEnabled)
+        checkImport(imp, importsCtx, langMode)
       }
       val environment = moduleSig.getNonSubstitutedCaptureDescr
       for func <- functions do {
-        checkFunction(func, analysisContext, moduleName, moduleSig.getNonSubstitutedCaptureDescr, OcapEnabled,
+        checkFunction(func, analysisContext, moduleName, moduleSig.getNonSubstitutedCaptureDescr, langMode,
           moduleSig.importedPackages.toSet, moduleSig.importedDevices.toSet, None)
       }
 
@@ -228,15 +228,22 @@ final class TypeChecker(errorReporter: ErrorReporter)
         }
       )
     case pkgImp@PackageImport(packageId, isMarked) =>
-      tcCtx.resolveTypeAs[PackageSignature](packageId) match {
-        case None =>
-          reportError(s"unknown package: $packageId", imp.getPosition)
-        case Some(PackageSignature(id, importedPackages, importedDevices, functions, languageMode))
-          if languageMode.isOcapDisabled && !isMarked =>
-          reportError(s"imported nocap packages must be marked $Sharp${Keyword.Package} $id", pkgImp.getPosition)
-        case _ => ()
+      if (langMode.isOcapEnabled) {
+        tcCtx.resolveTypeAs[PackageSignature](packageId) match {
+          case None =>
+            reportError(s"unknown package: $packageId", imp.getPosition)
+          case Some(PackageSignature(id, importedPackages, importedDevices, functions, languageMode))
+            if languageMode.isOcapDisabled && !isMarked =>
+            reportError(s"imported nocap packages must be marked: $Sharp${Keyword.Package} $id", pkgImp.getPosition)
+          case _ => ()
+        }
+      } else {
+        reportError("package import in non-ocap module", pkgImp.getPosition)
       }
-    case DeviceImport(device) => ()
+    case devImp@DeviceImport(device) =>
+      if (langMode.isOcapDisabled){
+        reportError("device import in non-ocap module", devImp.getPosition)
+      }
   }
 
   private def checkType(typeTree: TypeTree, idsAreFields: Boolean)
@@ -395,7 +402,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
   }
 
   private def checkStat(statement: Statement)
-                       (using tcCtx: TypeCheckingContext, langMode: LanguageMode, expRetType: Type): Unit = statement match {
+                       (using tcCtx: TypeCheckingContext, ambientLangMode: LanguageMode, expRetType: Type): Unit = statement match {
 
     case expr: Expr => checkExpr(expr)
 
@@ -561,7 +568,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
     case _: StringLit => StringType
   }
 
-  private def checkExpr(expr: Expr)(using tcCtx: TypeCheckingContext, langMode: LanguageMode): Type = {
+  private def checkExpr(expr: Expr)(using tcCtx: TypeCheckingContext, ambientLangMode: LanguageMode): Type = {
     val tpe = shapeOnlyIfOcapDisabled(expr match {
 
       case literal: Literal =>
@@ -579,7 +586,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         tcCtx.meType
 
       case pkg@PackageRef(packageName) =>
-        if (!tcCtx.isImported(packageName)) {
+        if (ambientLangMode.isOcapEnabled && !tcCtx.isImported(packageName)) {
           reportError(s"package $packageName has not been imported", pkg.getPosition)
         }
         tcCtx.resolveType(packageName) match {
@@ -589,7 +596,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         }
 
       case devRef@DeviceRef(device) =>
-        if (!tcCtx.isImported(device)) {
+        if (ambientLangMode.isOcapEnabled && !tcCtx.isImported(device)) {
           reportError(s"device $device has not been imported", devRef.getPosition)
         }
         device.tpe
@@ -636,7 +643,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         reportError("cannot infer type of empty array, use 'arr <type>[0]' instead", filledArrayInit.getPosition)
 
       case filledArrayInit@FilledArrayInit(arrayElems, regionOpt) =>
-        val isMutableArray = regionOpt.isDefined || langMode.isOcapDisabled
+        val isMutableArray = regionOpt.isDefined || ambientLangMode.isOcapDisabled
         requireAndCheckRegionIffOcapEnabled(regionOpt, filledArrayInit.getPosition, isMutableArray)
         val types = arrayElems.map(checkExpr)
         computeJoinOf(types.toSet, tcCtx) match {
@@ -649,18 +656,18 @@ final class TypeChecker(errorReporter: ErrorReporter)
       case instantiation@StructOrModuleInstantiation(regionOpt, tid, args) =>
         regionOpt.foreach(checkExpr)
         tcCtx.resolveType(tid) match {
-          case Some(structSig: StructSignature) if structSig.isAbstract =>
+          case Some(sig) if sig.isAbstract =>
             reportError(
-              s"cannot instantiate datatype $tid",
+              s"$tid is abstract, hence it cannot be instantiated",
               instantiation.getPosition
             )
           case Some(structSig: StructSignature) =>
-            if (langMode.isOcapEnabled && structSig.isShallowMutable && regionOpt.isEmpty) {
+            if (ambientLangMode.isOcapEnabled && structSig.isShallowMutable && regionOpt.isEmpty) {
               reportError(
                 s"cannot instantiate '$tid' without providing a region, since it is a mutable struct",
                 instantiation.getPosition
               )
-            } else if (langMode.isOcapEnabled && !structSig.isShallowMutable && regionOpt.isDefined) {
+            } else if (ambientLangMode.isOcapEnabled && !structSig.isShallowMutable && regionOpt.isDefined) {
               reportError(
                 s"${structSig.id} is not a mutable struct, hence it should not be associated with a region",
                 regionOpt.get.getPosition
@@ -672,17 +679,22 @@ final class TypeChecker(errorReporter: ErrorReporter)
           case Some(moduleSig: ModuleSignature) =>
             checkCallArgs(moduleSig, moduleSig.voidInitMethodSig, receiverOpt = None, regionOpt = None, args,
               isInstantiation = true, instantiation.getPosition)
-            if (langMode.isOcapEnabled) {
+            if (ambientLangMode.isOcapEnabled) {
               moduleSig.importedPackages.foreach(pkgId => checkIsAllowedInCurrentEnvir(CapPackage(pkgId), instantiation.getPosition))
               moduleSig.importedDevices.foreach(device => checkIsAllowedInCurrentEnvir(CapDevice(device), instantiation.getPosition))
+              checkImplicitImportsAreAllowed(moduleSig.importedPackages, tcCtx.isImported, "package", tid,
+                instantiation.getPosition)
+              checkImplicitImportsAreAllowed(moduleSig.importedDevices, tcCtx.isImported, "device", tid,
+                instantiation.getPosition)
+              if (moduleSig.languageMode.isOcapDisabled && !tcCtx.insideEnclosure){
+                reportError("cannot instantiate a non-ocap module outside of an enclosure", instantiation.getPosition)
+              }
             }
-            checkImplicitImportsAreAllowed(moduleSig.importedPackages, tcCtx.isImported, "package", tid,
-              instantiation.getPosition)
-            checkImplicitImportsAreAllowed(moduleSig.importedDevices, tcCtx.isImported, "device", tid,
-              instantiation.getPosition)
-            val pkgCapabilities = moduleSig.importedPackages.map(CapPackage(_)).toSet
-            val devicesCapabilities = moduleSig.importedDevices.map(CapDevice(_)).toSet
-            NamedTypeShape(tid) ^ computeCaptures(args, regionOpt, moduleSig)
+            val cd =
+              if moduleSig.languageMode.isOcapEnabled
+              then computeCaptures(args, regionOpt, moduleSig)
+              else Mark
+            NamedTypeShape(tid) ^ cd
           case _ => reportError(s"not found: structure or module '$tid'", instantiation.getPosition)
         }
 
@@ -1078,14 +1090,14 @@ final class TypeChecker(errorReporter: ErrorReporter)
               reportError(s"cannot update immutable field '$fieldName'", posOpt)
             }
             performSubstIfApplicable(fieldType, structSig)
-          case Some(modSig@ModuleSignature(_, paramImports, _, _, _)) if paramImports.contains(fieldName) =>
+          case Some(modSig: ModuleSignature) if modSig.paramImports.contains(fieldName) =>
             if (!receiver.isInstanceOf[MeRef]) {
               reportError(s"references to module imports are only allowed when using the '${Keyword.Me}' keyword", posOpt)
             }
             if (mustUpdateField) {
               reportError("cannot update module field", posOpt)
             }
-            performSubstIfApplicable(paramImports.apply(fieldName), modSig)
+            performSubstIfApplicable(modSig.paramImports.apply(fieldName), modSig)
           case _ =>
             reportError(s"'$exprType' has no field named '$fieldName'", posOpt)
         }

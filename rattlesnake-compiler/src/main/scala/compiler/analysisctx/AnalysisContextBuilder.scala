@@ -34,14 +34,11 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
   private val constants: mutable.Map[FunOrVarId, Type] = mutable.Map.empty
 
   def addModule(moduleDef: ModuleDef)(using langMode: LanguageMode): Unit = {
-    if (langMode == OcapDisabled) {
-      reportError("module in non-ocap file", moduleDef.getPosition)
-    }
     val moduleName = moduleDef.moduleName
     if (checkTypeNotAlreadyDefined(moduleName, moduleDef.getPosition)) {
       val (importedModules, importedPackages, importedDevices) = analyzeImports(moduleDef)
       val functions = extractFunctions(moduleDef)
-      val moduleSig = ModuleSignature(moduleName, importedModules, importedPackages, importedDevices, functions)
+      val moduleSig = ModuleSignature(moduleName, importedModules, importedPackages, importedDevices, functions, langMode)
       modules.put(moduleName, moduleSig)
     }
   }
@@ -145,17 +142,18 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
       Mark
   }
 
-  private def analyzeImports(moduleDef: ModuleDef) = {
+  private def analyzeImports(moduleDef: ModuleDef)(using langMode: LanguageMode) = {
     val importsMap = new mutable.LinkedHashMap[FunOrVarId, Type]()
     val packagesSet = new mutable.LinkedHashSet[TypeIdentifier]()
     val devicesSet = new mutable.LinkedHashSet[Device]()
     moduleDef.imports.foreach {
       case ParamImport(instanceId, moduleType) =>
         importsMap.put(instanceId, computeType(moduleType, idsAreFields = true))
-      case PackageImport(packageId, _) =>
+      case PackageImport(packageId, _) if langMode.isOcapEnabled =>
         packagesSet.add(packageId)
-      case DeviceImport(device) =>
+      case DeviceImport(device) if langMode.isOcapEnabled =>
         devicesSet.add(device)
+      case _ => ()
     }
     (importsMap, packagesSet, devicesSet)
   }
