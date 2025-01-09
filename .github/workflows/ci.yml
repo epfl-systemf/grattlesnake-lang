@@ -15,6 +15,6 @@ jobs:
           distribution: temurin
           java-version: 21
       - name: Create jars
-        run: (cd mkjars-script/ && python mk_jars.py)
+        run: (cd mkjars-script/ && python mk_jars.py skip-compiler)
       - name: Build and Test
         run: (cd rattlesnake-compiler/ && sbt -v +test)
