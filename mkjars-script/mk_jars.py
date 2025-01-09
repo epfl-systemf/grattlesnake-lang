@@ -20,7 +20,7 @@ compiler_scala_version: Final[str] = "scala-3.5.0"
 
 
 def assemble(dirpath: str):
-    subprocess.Popen(["sbt", "assembly"], cwd=dirpath, shell=True, stdout=sys.stdout,
+    subprocess.Popen("sbt assembly", cwd=dirpath, shell=True, stdout=sys.stdout,
                      stderr=sys.stderr).wait()
 
 
@@ -31,7 +31,7 @@ def copyJar(src_dir: str, name_criterion: Callable[[str], bool], dst_file_name: 
 
 
 def package(dirpath: str):
-    subprocess.Popen(["mvn", "clean", "package"], cwd=dirpath, shell=True, stdout=sys.stdout,
+    subprocess.Popen("mvn clean package", cwd=dirpath, shell=True, stdout=sys.stdout,
                      stderr=sys.stderr).wait()
 
 
