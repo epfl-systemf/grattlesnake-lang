@@ -511,6 +511,9 @@ final class TypeChecker(errorReporter: ErrorReporter)
       newCtx.writeLocalsRelatedWarnings(errorReporter)
 
     case retStat@ReturnStat(valueOpt) =>
+      if (tcCtx.insideEnclosure){
+        reportError("return statements are not allowed inside enclosures", retStat.getPosition)
+      }
       valueOpt.foreach { value =>
         val retType = checkExpr(value)
         checkSubtypingConstraint(expRetType, retType, retStat.getPosition, "returned value")
