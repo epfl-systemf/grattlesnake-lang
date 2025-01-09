@@ -142,11 +142,7 @@ final case class FieldInfo(tpe: Type, isReassignable: Boolean, languageMode: Lan
 }
 
 private def convertType(fromMode: LanguageMode, toMode: LanguageMode, tpe: Type): Type = (fromMode, toMode) match {
-  case (OcapEnabled, OcapDisabled) => tpe.shape
-  case (OcapDisabled, OcapEnabled) => tpe.shape match {
-    case RegionType => RegionType ^ Mark
-    case prim : PrimitiveTypeShape => prim
-    case shape => shape ^ Mark
-  }
+  case (OcapEnabled, OcapDisabled) => tpe.cdErased
+  case (OcapDisabled, OcapEnabled) => tpe.markedIfNeeded
   case _ => tpe
 }
