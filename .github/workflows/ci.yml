@@ -14,9 +14,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - name: Compile runtime to jar
-        run: (cd rattlesnake-runtime/ && mvn -B package)
-      - name: Compile agent to jar
-        run: (cd rattlesnake-agent/ && mvn -B package)
+      - name: Create jars
+        run: (cd mkjars-script/ && python mk_jars.py)
       - name: Build and Test
         run: (cd rattlesnake-compiler/ && sbt -v +test)
