@@ -199,7 +199,6 @@ final class TypeChecker(errorReporter: ErrorReporter)
     }
     val optRetType = optRetTypeTree.map(checkType(_, idsAreFields = false)(using tcCtx, langMode))
     val expRetType = optRetType.getOrElse(VoidType)
-    forbidRootCapture(expRetType, "function return", funDef.getPosition)
     checkStat(body)(using tcCtx, langMode, expRetType)
     tcCtx.writeLocalsRelatedWarnings(errorReporter)
   }
