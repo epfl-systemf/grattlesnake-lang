@@ -680,8 +680,10 @@ final class TypeChecker(errorReporter: ErrorReporter)
             checkCallArgs(moduleSig, moduleSig.voidInitMethodSig, receiverOpt = None, regionOpt = None, args,
               isInstantiation = true, instantiation.getPosition)
             if (ambientLangMode.isOcapEnabled) {
-              moduleSig.importedPackages.foreach(pkgId => checkIsAllowedInCurrentEnvir(CapPackage(pkgId), instantiation.getPosition))
-              moduleSig.importedDevices.foreach(device => checkIsAllowedInCurrentEnvir(CapDevice(device), instantiation.getPosition))
+              moduleSig.importedPackages.foreach(pkgId =>
+                checkIsAllowedInCurrentEnvir(CapPackage(pkgId), instantiation.getPosition, importerOpt = Some(moduleSig.id)))
+              moduleSig.importedDevices.foreach(device =>
+                checkIsAllowedInCurrentEnvir(CapDevice(device), instantiation.getPosition, importerOpt = Some(moduleSig.id)))
               checkImplicitImportsAreAllowed(moduleSig.importedPackages, tcCtx.isImported, "package", tid,
                 instantiation.getPosition)
               checkImplicitImportsAreAllowed(moduleSig.importedDevices, tcCtx.isImported, "device", tid,
@@ -825,9 +827,12 @@ final class TypeChecker(errorReporter: ErrorReporter)
     }
   }
 
-  private def checkIsAllowedInCurrentEnvir(capt: Capturable, posOpt: Option[Position])(using tcCtx: TypeCheckingContext): Unit = {
+  private def checkIsAllowedInCurrentEnvir(capt: Capturable, posOpt: Option[Position],
+                                           importerOpt: Option[TypeIdentifier] = None)
+                                          (using tcCtx: TypeCheckingContext): Unit = {
     if (!capt.isCoveredBy(tcCtx.currentRestriction)) {
-      reportError(s"$capt is not allowed in the current environment", posOpt)
+      val additInfo = importerOpt.map(imp => s"(imported by $imp) ").getOrElse("")
+      reportError(s"$capt ${additInfo}is not allowed in the current environment", posOpt)
     }
   }
 
