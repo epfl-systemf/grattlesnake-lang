@@ -408,6 +408,9 @@ final class TypeChecker(errorReporter: ErrorReporter)
       newCtx.writeLocalsRelatedWarnings(errorReporter)
 
     case localDef@LocalDef(localName, optTypeAnnotTree, rhsOpt, isReassignable) =>
+      if (tcCtx.constants.contains(localName)){
+        reportError(s"illegal name for local: $localName is already defined as a constant", localDef.getPosition)
+      }
       val inferredTypeOpt = rhsOpt.map(checkExpr)
       val optAnnotType = optTypeAnnotTree.map { typeAnnotTree =>
         val annotType = checkType(typeAnnotTree, idsAreFields = false)(using tcCtx)
