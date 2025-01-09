@@ -15,7 +15,7 @@ package Test {
 
 }
 
-interface I { i: Int }
+datatype I { i: Int }
 
 struct S : I { i: Int }
 

@@ -1,5 +1,5 @@
 
-mut interface Super {
+mut datatype Super {
     var x: Int
 }
 

@@ -1,5 +1,5 @@
 
-mut interface Tree {
+mut datatype Tree {
     var value: Int
 }
 
@@ -14,34 +14,34 @@ mut struct Leaf : Tree {
     var value: Int
 }
 
-mut interface Cell {
+mut datatype Cell {
     var value: Int
 }
 
-interface MemoInit {
+datatype MemoInit {
     initValue: Int
 }
 
-mut interface MemoLast {
+mut datatype MemoLast {
     var lastValue: Int
 }
 
-mut interface MemoLastAndInit : MemoLast, MemoInit {
+mut datatype MemoLastAndInit : MemoLast, MemoInit {
     initValue: Int,
     var lastValue: Int
 }
 
-mut interface CellWithMemoLastAndInit : Cell, MemoLastAndInit {
+mut datatype CellWithMemoLastAndInit : Cell, MemoLastAndInit {
     var value: Int,
     initValue: Int,
     var lastValue: Int
 }
 
-interface Messageable {
+datatype Messageable {
     msg: String
 }
 
-interface TreeCell {
+datatype TreeCell {
     r: Region^,
     tree: Tree^{r}
 }

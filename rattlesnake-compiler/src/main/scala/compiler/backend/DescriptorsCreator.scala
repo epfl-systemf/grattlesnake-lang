@@ -20,7 +20,7 @@ object DescriptorsCreator {
       case PrimitiveTypeShape.StringType => "Ljava/lang/String;"
       case PrimitiveTypeShape.VoidType => "V"
       case PrimitiveTypeShape.NothingType => "V"
-      case Types.NamedTypeShape(typeName) if !ctx.resolveType(typeName).get.isInterface => s"L$typeName;"
+      case Types.NamedTypeShape(typeName) if !ctx.resolveType(typeName).get.isAbstract => s"L$typeName;"
       case Types.NamedTypeShape(_) | Types.UnionTypeShape(_) => "Ljava/lang/Object;"
       case Types.ArrayTypeShape(elemType) => s"[${descriptorForType(elemType.shape)}"
       case Types.UndefinedTypeShape => assert(false)

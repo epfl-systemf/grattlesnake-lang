@@ -1,12 +1,12 @@
 
 // TODO similar test case but with capture sets
 
-interface Tree {
+datatype Tree {
     id: Int,
     var value: Int
 }
 
-interface Fork : Tree {  //> E : 'value' should be reassignable in 'Fork' if and only if it is reassignable in its supertype 'Tree'
+datatype Fork : Tree {  //> E : 'value' should be reassignable in 'Fork' if and only if it is reassignable in its supertype 'Tree'
     id: Int,
     var left: Leaf,
     value: Int,

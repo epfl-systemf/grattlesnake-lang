@@ -2,7 +2,7 @@
 // additional implementation of Tree to make pattern match incomplete in sum
 struct ValuedFork : Tree { l: Tree, value: Int, r: Tree }
 
-interface Tree
+datatype Tree
 struct Fork : Tree { l: Tree, r: Tree }
 struct Leaf : Tree { value: Int }
 

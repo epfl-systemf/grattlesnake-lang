@@ -1,5 +1,5 @@
 
-interface MutList
+datatype MutList
 
 mut struct MutCons : MutList {
     rg: Region^,

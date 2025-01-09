@@ -1,6 +1,6 @@
 #nocap;
 
-mut interface Super {
+mut datatype Super {
     var x: Int
 }
 
@@ -13,7 +13,7 @@ struct Indep {
     i: Int
 }
 
-interface I {}
+datatype I {}
 
 package Test {
 

@@ -61,7 +61,7 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
     if (checkTypeNotAlreadyDefined(name, structDef.getPosition)) {
       val fieldsMap = buildStructFieldsMap(structDef)
       val directSubtypesOpt =
-        if structDef.isInterface
+        if structDef.isAbstract
         then Some(mutable.LinkedHashSet.empty[TypeIdentifier])
         else None
       val sig = StructSignature(name, structDef.isShallowMutable, fieldsMap, structDef.directSupertypes,
@@ -250,14 +250,14 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
       structs.get(directSupertypeId) match {
         case Some((directSupertypeSig, supertypeDefPosOpt)) => {
           if (structDefPosOpt.get.srcCodeProviderName != supertypeDefPosOpt.get.srcCodeProviderName) {
-            reportError("only interfaces defined in the same source file can be used as supertypes", structDefPosOpt)
+            reportError("only datatypes defined in the same source file can be used as supertypes", structDefPosOpt)
           } else {
             directSupertypeSig.directSubtypesOpt.foreach(_.add(structId))
           }
           if (!structSig.isShallowMutable && directSupertypeSig.isShallowMutable) {
             reportError(s"immutable $structId cannot be a subtype of mutable $directSupertypeId", structDefPosOpt)
           }
-          if (directSupertypeSig.isInterface) {
+          if (directSupertypeSig.isAbstract) {
             // TODO carefully check what happens here
             // i.e. what elements each field is allowed to capture (fields of the super-/subtype)
             // and what me refers to
@@ -294,11 +294,14 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
               tcCtx.addLocal(fldName, superFldInfo.tpe, None, superFldInfo.isReassignable, true, () => (), () => ())
             }
           } else {
-            reportError(s"struct '$directSupertypeId' is not an interface", structDefPosOpt)
+            reportError(
+              s"struct '$directSupertypeId' is not an abstract datatype, hence it cannot be used as a supertype",
+              structDefPosOpt
+            )
           }
         }
         case None =>
-          reportError(s"interface '$directSupertypeId' is unknown", structDefPosOpt)
+          reportError(s"datatype '$directSupertypeId' is unknown", structDefPosOpt)
       }
     }
   }

@@ -56,7 +56,7 @@ object TypesConverter {
       case PrimitiveTypeShape.StringType => "java/lang/String"
       case PrimitiveTypeShape.VoidType => "V"
       case PrimitiveTypeShape.NothingType => "V"
-      case NamedTypeShape(typeName) if !ctx.resolveType(typeName).get.isInterface => s"$typeName"
+      case NamedTypeShape(typeName) if !ctx.resolveType(typeName).get.isAbstract => s"$typeName"
       case ArrayTypeShape(elemType) => s"[${descriptorForType(elemType.shape)}"
       case NamedTypeShape(_) | UnionTypeShape(_) => "java/lang/Object"
       case UndefinedTypeShape => assert(false)

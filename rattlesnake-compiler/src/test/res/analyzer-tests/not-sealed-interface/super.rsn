@@ -1,4 +1,4 @@
 
-interface Super {
+datatype Super {
     x: Int
 }

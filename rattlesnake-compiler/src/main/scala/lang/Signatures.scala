@@ -28,7 +28,7 @@ sealed trait TypeSignature {
 
   def getNonSubstitutedCaptureDescr: CaptureDescriptor
 
-  def isInterface: Boolean
+  def isAbstract: Boolean
 
   def languageMode: LanguageMode
 }
@@ -92,7 +92,7 @@ final case class ModuleSignature(
 
   override def languageMode: LanguageMode = OcapEnabled
 
-  override def isInterface: Boolean = false
+  override def isAbstract: Boolean = false
 }
 
 final case class PackageSignature(
@@ -109,7 +109,7 @@ final case class PackageSignature(
 
   def asType: Type = NamedTypeShape(id) ^ (if languageMode.isOcapEnabled then CaptureSet(globalCaptures) else Mark)
 
-  override def isInterface: Boolean = false
+  override def isAbstract: Boolean = false
 }
 
 final case class StructSignature(
@@ -122,7 +122,7 @@ final case class StructSignature(
                                 )
   extends TypeSignature, ConstructibleSig, UserConstructibleSig, SelectableSig {
 
-  override def isInterface: Boolean = directSubtypesOpt.isDefined
+  override def isAbstract: Boolean = directSubtypesOpt.isDefined
 
   override def params: mutable.LinkedHashMap[FunOrVarId, FieldInfo] = fields
 

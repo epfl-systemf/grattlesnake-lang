@@ -271,8 +271,8 @@ final class Backend[V <: ClassVisitor](
       val classFilePath = outputDir.resolve(mode.withExtension(tpe.name.stringId))
       tpe match {
         case struct: StructDef =>
-          val interfaces = struct.directSupertypes.map(_.stringId).toArray
-          generateStruct(struct, interfaces, classFilePath)
+          val datatypes = struct.directSupertypes.map(_.stringId).toArray
+          generateStruct(struct, datatypes, classFilePath)
         case modOrPkg: ModuleOrPackageDefTree =>
           generateModuleOrPackageFile(modOrPkg, classFilePath)
       }
@@ -280,32 +280,35 @@ final class Backend[V <: ClassVisitor](
     }
   }
 
-  private def generateStruct(structDef: StructDef, superInterfaces: Array[String],
+  private def generateStruct(structDef: StructDef, superDatatypes: Array[String],
                              structFilePath: Path)(using ctx: AnalysisContext): Unit = {
     val structName = structDef.structName
     val structSig = ctx.structs.apply(structName)
-    val isInterface = structSig.isInterface
+    val isAbstract = structSig.isAbstract
     val cv = mode.createVisitor(structFilePath)
     addSourceNameIfKnown(cv, structDef.getPosition)
     var classMods = ACC_PUBLIC
-    if (isInterface) {
+    if (isAbstract) {
       classMods |= ACC_INTERFACE
       classMods |= ACC_ABSTRACT
     } else {
       classMods |= ACC_FINAL
     }
-    cv.visit(javaVersionCode, classMods, structDef.structName.stringId, null, objectTypeStr, superInterfaces)
-    if (!isInterface) {
+    cv.visit(javaVersionCode, classMods, structDef.structName.stringId, null, objectTypeStr, superDatatypes)
+    if (!isAbstract) {
       addFields(structDef, cv)
       addConstructor(cv, Opcodes.ACC_PUBLIC, structSig)
     }
-    val fieldsWithAccessors = if isInterface then structSig.fields.keySet else getInterfaceFieldsForStruct(structName, ctx.structs)
+    val fieldsWithAccessors =
+      if isAbstract
+      then structSig.fields.keySet
+      else getInheritedFieldsForStruct(structName, ctx.structs)
     for (fld <- fieldsWithAccessors) {
       val fldType = structSig.fields.apply(fld).tpe
       val fieldDescr = descriptorForType(fldType.shape)
-      generateGetter(structName, fld, fldType, fieldDescr, cv, genImplementation = !isInterface)
+      generateGetter(structName, fld, fldType, fieldDescr, cv, genImplementation = !isAbstract)
       if (structSig.fields.apply(fld).isReassignable) {
-        generateSetter(structName, fld, fldType, fieldDescr, cv, genImplementation = !isInterface)
+        generateSetter(structName, fld, fldType, fieldDescr, cv, genImplementation = !isAbstract)
       }
     }
     cv.visitEnd()
@@ -390,7 +393,7 @@ final class Backend[V <: ClassVisitor](
     }
   }
 
-  private def getInterfaceFieldsForStruct(structId: TypeIdentifier, structs: Map[TypeIdentifier, StructSignature]): Set[FunOrVarId] = {
+  private def getInheritedFieldsForStruct(structId: TypeIdentifier, structs: Map[TypeIdentifier, StructSignature]): Set[FunOrVarId] = {
     // BFS
 
     val fields = mutable.Set.empty[FunOrVarId]
@@ -665,7 +668,7 @@ final class Backend[V <: ClassVisitor](
         val fieldType =
           analysisContext.structs.get(typeName).map(_.fields.apply(selected).tpe)
             .getOrElse(analysisContext.modules.apply(typeName).paramImports.apply(selected))
-        if (ctx.structs.get(typeName).exists(_.isInterface)) {
+        if (ctx.structs.get(typeName).exists(_.isAbstract)) {
           val getterDescriptor = descriptorForFunc(List.empty, fieldType)
           mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, typeName.stringId, selected.stringId, getterDescriptor, true)
         } else {
@@ -697,7 +700,7 @@ final class Backend[V <: ClassVisitor](
             val ownerTypeName = ownerStruct.getTypeShape.asInstanceOf[NamedTypeShape].typeName
             val structSig = ctx.structs.apply(ownerTypeName)
             val fieldType = structSig.fields.apply(fieldName).tpe
-            if (structSig.isInterface) {
+            if (structSig.isAbstract) {
               val setterDescriptor = descriptorForFunc(List(None -> fieldType), PrimitiveTypeShape.VoidType)
               mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, ownerTypeName.stringId, fieldName.stringId, setterDescriptor, true)
             } else {

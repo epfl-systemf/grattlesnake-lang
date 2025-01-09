@@ -23,7 +23,7 @@ package Test {
     
 }
 
-interface Option {
+datatype Option {
 }
 
 struct Some : Option {

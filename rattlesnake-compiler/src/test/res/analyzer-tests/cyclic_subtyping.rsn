@@ -1,16 +1,16 @@
 
-interface A : B {}
+datatype A : B {}
 
-interface B : D {}
+datatype B : D {}
 
-interface C : B {}
+datatype C : B {}
 
-interface D : E {}
+datatype D : E {}
 
-interface E : A {}  //> E : cyclic subtyping: cycle involves E
+datatype E : A {}  //> E : cyclic subtyping: cycle involves E
 
-interface F {}
+datatype F {}
 
-interface G: F, A {}
+datatype G: F, A {}
 
 // cycle: A, B, D, E, A

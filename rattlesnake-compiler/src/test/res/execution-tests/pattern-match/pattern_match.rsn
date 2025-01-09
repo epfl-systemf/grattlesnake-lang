@@ -1,5 +1,5 @@
 
-interface Tree
+datatype Tree
 struct Fork : Tree { l: Tree, r: Tree }
 struct Leaf : Tree { value: Int }
 

@@ -21,7 +21,7 @@ object SubtypeRelation {
       case _ if subT == superT => true
       case (NothingType | UndefinedTypeShape, _) => true
       case (NamedTypeShape(subId), NamedTypeShape(superId)) =>
-        subInterfaceOf(subId, superId)
+        substructOf(subId, superId)
       case (ArrayTypeShape(subElemType), ArrayTypeShape(superElemType)) =>
         subElemType == superElemType
       case (UnionTypeShape(subTypes), superT) =>
@@ -32,7 +32,7 @@ object SubtypeRelation {
     }
   }
 
-  def subInterfaceOf(subT: TypeIdentifier, superT: TypeIdentifier)(using tcCtx: TypeCheckingContext): Boolean = {
+  def substructOf(subT: TypeIdentifier, superT: TypeIdentifier)(using tcCtx: TypeCheckingContext): Boolean = {
     // BFS
 
     val worklist = mutable.Queue.empty[TypeIdentifier]

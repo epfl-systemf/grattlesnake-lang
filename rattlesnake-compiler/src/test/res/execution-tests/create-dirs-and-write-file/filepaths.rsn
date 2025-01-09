@@ -1,5 +1,5 @@
 
-interface FilePath
+datatype FilePath
 
 struct RootPath : FilePath
 

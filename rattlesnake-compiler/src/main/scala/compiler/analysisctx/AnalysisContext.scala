@@ -45,7 +45,7 @@ final case class AnalysisContext private[analysisctx](
       } getOrElse ModuleNotFound
   }
 
-  def interfaceIsCovered(totalStructId: TypeIdentifier, possiblyCoveringSubstructs: Set[TypeIdentifier]): Boolean = {
+  def datatypeIsCovered(totalStructId: TypeIdentifier, possiblyCoveringSubstructs: Set[TypeIdentifier]): Boolean = {
     val worklist = mutable.Queue.empty[TypeIdentifier]
     worklist.enqueue(totalStructId)
     while (worklist.nonEmpty) {

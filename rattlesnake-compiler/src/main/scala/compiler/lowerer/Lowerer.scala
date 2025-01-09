@@ -60,7 +60,7 @@ final class Lowerer extends CompilerStep[(List[Source], AnalysisContext), (List[
       structDef.isShallowMutable,
       structDef.fields.map(lower),
       structDef.directSupertypes,
-      structDef.isInterface
+      structDef.isAbstract
     )
   }
   

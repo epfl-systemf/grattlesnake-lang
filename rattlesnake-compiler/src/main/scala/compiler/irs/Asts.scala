@@ -114,7 +114,7 @@ object Asts {
 
     def directSupertypes: Seq[TypeIdentifier]
 
-    def isInterface: Boolean
+    def isAbstract: Boolean
   }
 
   sealed trait ModuleOrPackageDefTree extends TypeDefTree {
@@ -128,7 +128,7 @@ object Asts {
 
     override def directSupertypes: Seq[TypeIdentifier] = Nil
 
-    override def isInterface: Boolean = false
+    override def isAbstract: Boolean = false
 
     override def children: List[Ast] = functions
 
@@ -144,7 +144,7 @@ object Asts {
 
     override def directSupertypes: Seq[TypeIdentifier] = Nil
 
-    override def isInterface: Boolean = false
+    override def isAbstract: Boolean = false
 
     override def children: List[Ast] = imports ++ functions
 
@@ -167,14 +167,14 @@ object Asts {
 
 
   /**
-   * Structure (`struct`) or interface definition
+   * Structure (`struct`) or datatype definition
    */
   final case class StructDef(
                               structName: TypeIdentifier,
                               isShallowMutable: Boolean,
                               fields: List[Param],
                               directSupertypes: Seq[TypeIdentifier],
-                              isInterface: Boolean
+                              isAbstract: Boolean
                             ) extends TypeDefTree {
     override def name: TypeIdentifier = structName
 

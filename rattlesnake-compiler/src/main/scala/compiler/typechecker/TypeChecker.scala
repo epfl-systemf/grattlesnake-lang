@@ -649,9 +649,9 @@ final class TypeChecker(errorReporter: ErrorReporter)
       case instantiation@StructOrModuleInstantiation(regionOpt, tid, args) =>
         regionOpt.foreach(checkExpr)
         tcCtx.resolveType(tid) match {
-          case Some(structSig: StructSignature) if structSig.isInterface =>
+          case Some(structSig: StructSignature) if structSig.isAbstract =>
             reportError(
-              s"cannot instantiate interface $tid",
+              s"cannot instantiate datatype $tid",
               instantiation.getPosition
             )
           case Some(structSig: StructSignature) =>

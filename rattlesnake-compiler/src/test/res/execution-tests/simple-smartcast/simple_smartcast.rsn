@@ -18,7 +18,7 @@ package Test {
     
 }
 
-interface Tree {}
+datatype Tree {}
 struct Fork : Tree {
     left: Tree,
     right: Tree

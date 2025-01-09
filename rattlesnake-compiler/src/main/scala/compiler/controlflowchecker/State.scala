@@ -68,7 +68,7 @@ final case class State(
       val (valId, coveredTypes) = iter.next()
       ctx.typeOf(valId).shape match {
         case NamedTypeShape(totalTypeId) if !ctx.isReassignable(valId) =>
-          if (ctx.analysisContext.interfaceIsCovered(totalTypeId, coveredTypes)){
+          if (ctx.analysisContext.datatypeIsCovered(totalTypeId, coveredTypes)){
             return true
           }
         case _ => ()  // expected to never happen

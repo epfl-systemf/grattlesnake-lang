@@ -8,7 +8,7 @@ mut struct B : I {
     var x: Int
 }
 
-mut interface I {
+mut datatype I {
     var x: Int
 }
 
