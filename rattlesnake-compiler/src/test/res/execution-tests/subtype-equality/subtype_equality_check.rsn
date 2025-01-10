@@ -30,6 +30,14 @@ package Arrays {
         return Comparisons.compareSubSub(sCreator.createS(), sCreator.createS());
     }
 
+    main fn run(arr String){
+        console.print(Arrays.testSupSup() as String);
+        console.print(Arrays.testSubSup() as String);
+        console.print(Arrays.testSupSub() as String);
+        console.print(Arrays.testSubSub() as String);
+        console.print(Arrays.testSubAsSupSup() as String);
+    }
+
 }
 
 datatype I { i: Int }

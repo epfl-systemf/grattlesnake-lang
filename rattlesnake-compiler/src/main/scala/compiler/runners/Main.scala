@@ -5,7 +5,6 @@ import compiler.gennames.FileExtensions
 import compiler.gennames.FileExtensions.rattlesnake as rattlesnakeExt
 import compiler.io.{SourceCodeProvider, SourceFile}
 import compiler.pipeline.TasksPipelines
-import compiler.runners.MainFinder.findMainClassNameAmong
 import org.objectweb.asm.Opcodes.{V11, V17, V1_8}
 
 import java.nio.file.{Files, InvalidPathException, Path, Paths}
@@ -209,11 +208,13 @@ object Main {
       val compiler = TasksPipelines.compiler(outDirBasePath, javaVersion, runtimeDir, runtimeDir)
       val programArgs = getProgramArgsArg(argsMap)
       reportUnknownArgsIfAny(argsMap)
-      val writtenFilesPaths = compiler.apply(sources)
-      val mainClassName =
-        findMainClassNameAmong(writtenFilesPaths)
-          .fold(e => error(e.getMessage), identity)
-      val process = new Runner(error, outDirBasePath).runMain(mainClassName, inheritIO = true)
+      val mainClasses = compiler.apply(sources)
+      if (mainClasses.isEmpty){
+        error("no main class found")
+      } else if (mainClasses.size >= 2){
+        error("found more than one main class")
+      }
+      val process = new Runner(error, outDirBasePath).runMain(mainClasses.head, inheritIO = true)
       val exitCode = process.waitFor()
       if (exitCode != 0) {
         System.err.println(s"Process terminated with error code $exitCode")

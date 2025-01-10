@@ -13,6 +13,7 @@ import compiler.prettyprinter.PrettyPrinter
 import compiler.reporting.Errors.{ErrorReporter, ExitCode}
 import compiler.tailrecchecker.TailrecChecker
 import compiler.typechecker.TypeChecker
+import identifiers.TypeIdentifier
 import org.objectweb.asm.ClassVisitor
 
 import java.nio.file.Path
@@ -31,7 +32,7 @@ object TasksPipelines {
                 runtimeDirPath: Path,
                 agentDirPath: Path,
                 er: ErrorReporter = defaultErrorReporter
-              ): CompilerStep[List[SourceCodeProvider], List[Path]] = {
+              ): CompilerStep[List[SourceCodeProvider], List[TypeIdentifier]] = {
     compilerImpl(outputDirectoryPath, Backend.BinaryMode, javaVersionCode, runtimeDirPath, agentDirPath, er)
   }
 
@@ -44,7 +45,7 @@ object TasksPipelines {
                       runtimeDirPath: Path,
                       agentDirPath: Path,
                       er: ErrorReporter = defaultErrorReporter
-                    ): CompilerStep[List[SourceCodeProvider], List[Path]] = {
+                    ): CompilerStep[List[SourceCodeProvider], List[TypeIdentifier]] = {
     compilerImpl(outputDirectoryPath, Backend.AssemblyMode, javaVersionCode, runtimeDirPath, agentDirPath, er)
   }
 

@@ -2,6 +2,7 @@ package compiler.runners
 
 import compiler.backend.JarFinder
 import compiler.gennames.ClassesAndDirectoriesNames.{agentSubdirName, outDirName}
+import identifiers.TypeIdentifier
 
 import java.io.File
 import java.nio.file.Path
@@ -13,7 +14,7 @@ final class Runner(errorCallback: String => Nothing, workingDirectoryPath: Path)
     then ";"
     else ":"
 
-  def runMain(mainClassName: String, inheritIO: Boolean): Process = {
+  def runMain(mainClassName: TypeIdentifier, inheritIO: Boolean): Process = {
     val outDirPath = workingDirectoryPath.resolve(outDirName)
     val agentSubdirPath = outDirPath.resolve(agentSubdirName)
     val agentJarName = findNameOfJarInDir(agentSubdirPath.toFile, "rattlesnake-agent",
@@ -28,7 +29,7 @@ final class Runner(errorCallback: String => Nothing, workingDirectoryPath: Path)
         "java",
         "-cp", s"$runtimeJarFullPath$classPathsSep./$outDirName",
         s"-javaagent:$agentJarFullPath",
-        mainClassName
+        mainClassName.stringId
       )
     if (inheritIO) {
       processBuilder.inheritIO()

@@ -41,7 +41,7 @@ final class Backend[V <: ClassVisitor](
                                         javaVersionCode: Int,
                                         runtimeDirPath: Path,
                                         agentDirPath: Path
-                                      ) extends CompilerStep[(List[Source], AnalysisContext), List[Path]] {
+                                      ) extends CompilerStep[(List[Source], AnalysisContext), List[TypeIdentifier]] {
 
   private val javaTypesMapping: Map[PrimitiveTypeShape, String] = Map(
     IntType -> "Integer",
@@ -54,7 +54,7 @@ final class Backend[V <: ClassVisitor](
 
   import Backend.*
 
-  override def apply(input: (List[Source], AnalysisContext)): List[Path] = {
+  override def apply(input: (List[Source], AnalysisContext)): List[TypeIdentifier] = {
     val (sources, analysisContext) = input
     if (sources.isEmpty) {
       errorReporter.pushFatal(Fatal(CodeGeneration, "nothing to write: no sources", None))
@@ -84,15 +84,14 @@ final class Backend[V <: ClassVisitor](
 
       given AnalysisContext = analysisContext
 
-      val generatedClassFiles = mutable.ListBuffer.empty[Path]
+      val mainClassNames = mutable.ListBuffer.empty[TypeIdentifier]
 
-      generateTypes(modulesAndPackages, outputDirPath, generatedClassFiles)
-      generateTypes(structs, outputDirPath, generatedClassFiles)
+      generateTypes(modulesAndPackages, outputDirPath, mainClassNames)
+      generateTypes(structs, outputDirPath, mainClassNames)
 
       if (consts.nonEmpty) {
         val constantsFilePath = outputDirPath.resolve(mode.withExtension(ClassesAndDirectoriesNames.constantsClassName))
         generateConstantsFile(consts, constantsFilePath)
-        generatedClassFiles.addOne(constantsFilePath)
       }
 
       if (mode.generateRuntime) {
@@ -101,7 +100,7 @@ final class Backend[V <: ClassVisitor](
       }
 
       errorReporter.displayAndTerminateIfErrors()
-      generatedClassFiles.toList
+      mainClassNames.toList
     }
 
   }
@@ -163,7 +162,7 @@ final class Backend[V <: ClassVisitor](
     mode.terminate(ccv, constantsFilePath, errorReporter)
   }
 
-  private def generateModuleOrPackageFile(modOrPkg: ModuleOrPackageDefTree, path: Path)(using ctx: AnalysisContext): Unit = {
+  private def generateModuleOrPackageFile(modOrPkg: ModuleOrPackageDefTree, path: Path)(using ctx: AnalysisContext): Boolean = {
     val modOrPkgSig = ctx.resolveTypeAs[ConstructibleSig](modOrPkg.name).get
     val cv: V = mode.createVisitor(path)
     addSourceNameIfKnown(cv, modOrPkg.getPosition)
@@ -177,6 +176,7 @@ final class Backend[V <: ClassVisitor](
     for (varId, moduleType) <- modOrPkgSig.asInstanceOf[ImporterSig].paramImports do {
       cv.visitField(ACC_PRIVATE, varId.stringId, descriptorForType(moduleType.shape), null, null)
     }
+    var isMainClass = false
     for func <- modOrPkg.functions do {
       val funSig = func.getSignatureOpt.get
       val desc = descriptorForFunc(funSig)
@@ -184,12 +184,14 @@ final class Backend[V <: ClassVisitor](
       val mv = cv.visitMethod(visibility, func.funName.stringId, desc, null, null)
       addFunction(modOrPkg.name, func, mv, ctx)
       if (func.isMain) {
+        isMainClass = true
         val staticMv = cv.visitMethod(ACC_PUBLIC | ACC_STATIC, "main", desc, null, null)
         generateStaticMainFunction(staticMv, modOrPkg.name, funSig)
       }
     }
     cv.visitEnd()
     mode.terminate(cv, path, errorReporter)
+    isMainClass
   }
 
   private def generateStaticMainFunction(mv: MethodVisitor, pkgName: TypeIdentifier, delegateFunSig: FunctionSignature)(using AnalysisContext): Unit = {
@@ -261,7 +263,7 @@ final class Backend[V <: ClassVisitor](
   private def generateTypes(
                              types: List[TypeDefTree],
                              outputDir: Path,
-                             generatedFilesPaths: mutable.ListBuffer[Path]
+                             mainClassesList: mutable.ListBuffer[TypeIdentifier]
                            )(using AnalysisContext): Unit = {
     for tpe <- types do {
       val classFilePath = outputDir.resolve(mode.withExtension(tpe.name.stringId))
@@ -270,9 +272,11 @@ final class Backend[V <: ClassVisitor](
           val datatypes = struct.directSupertypes.map(_.stringId).toArray
           generateStruct(struct, datatypes, classFilePath)
         case modOrPkg: ModuleOrPackageDefTree =>
-          generateModuleOrPackageFile(modOrPkg, classFilePath)
+          val isMain = generateModuleOrPackageFile(modOrPkg, classFilePath)
+          if (isMain){
+            mainClassesList.addOne(tpe.name)
+          }
       }
-      generatedFilesPaths.addOne(classFilePath)
     }
   }
 

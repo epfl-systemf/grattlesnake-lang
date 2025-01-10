@@ -6,7 +6,7 @@ import compiler.gennames.FileExtensions
 import compiler.io.SourceFile
 import compiler.pipeline.TasksPipelines
 import compiler.reporting.Errors.ErrorReporter
-import compiler.runners.{MainFinder, Runner}
+import compiler.runners.Runner
 import org.junit.Assert.{assertEquals, assertNotEquals, assertTrue, fail}
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -60,7 +60,7 @@ class ExecutionTests(programDirName: String) {
     val er = ErrorReporter(System.err.println, exit = throw new ExitException)
     val srcFiles = getAllSourcesInProgram(programDirPath).map(s => SourceFile(programDirPath.resolve(s).toString))
 
-    val writtenFilePaths = try {
+    val mainClasses = try {
       TasksPipelines
         .compiler(testOutSubdirPath, javaVersionCode, jarsDir, jarsDir, er)
         .apply(srcFiles)
@@ -73,9 +73,9 @@ class ExecutionTests(programDirName: String) {
     def errorCallback(msg: String): Nothing = {
       throw AssertionError(msg)
     }
-
-    val mainClassName = MainFinder.findMainClassNameAmong(writtenFilePaths).fold(throw _, identity)
-    val process = Runner(errorCallback, testOutSubdirPath).runMain(mainClassName, inheritIO = false)
+    
+    assert(mainClasses.size == 1)
+    val process = Runner(errorCallback, testOutSubdirPath).runMain(mainClasses.head, inheritIO = false)
 
     val exitCode = process.waitFor()
     val actOut = readProgramStream(process.getInputStream)
