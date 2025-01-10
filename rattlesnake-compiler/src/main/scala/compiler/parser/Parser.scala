@@ -196,12 +196,12 @@ final class Parser(errorReporter: ErrorReporter) extends CompilerStep[(List[Posi
     pkgRef OR deviceRef OR path
   } setName "capturableExpr"
 
-  private lazy val hatAndImplicitRootCapOrBrand = recursive {
+  private lazy val hatAndImplicitRootCapOrMark = recursive {
     op(Hat) ::: opt(op(Sharp)) map {
       case hat ^: None => ImplicitRootCaptureSetTree()
       case hat ^: Some(_) => MarkTree()
     }
-  } setName "hatAndImplicitRootCapOrBrand"
+  } setName "hatAndImplicitRootCapOrMark"
 
   private lazy val explicitCaptureSetTree = recursive {
     openBrace ::: repeatWithSep(expr, comma) ::: closeBrace map {
@@ -216,7 +216,7 @@ final class Parser(errorReporter: ErrorReporter) extends CompilerStep[(List[Posi
   } setName "hatAndExplicitCaptureSetTree"
   
   private lazy val hatAndCaptureDescr: P[CaptureDescrTree] = recursive {
-    hatAndImplicitRootCapOrBrand OR hatAndExplicitCaptureSetTree
+    hatAndImplicitRootCapOrMark OR hatAndExplicitCaptureSetTree
   } setName "hatAndCaptureDescr"
   
   private lazy val primOrNamedShape = highName map { typeName =>

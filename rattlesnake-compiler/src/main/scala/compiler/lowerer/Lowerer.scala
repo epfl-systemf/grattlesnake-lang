@@ -324,7 +324,7 @@ final class Lowerer extends CompilerStep[(List[Source], AnalysisContext), (List[
       case ExplicitCaptureSetTree(capturedExpressions) =>
         ExplicitCaptureSetTree(capturedExpressions.map(lower))
       case implicitRootCaptureSetTree: ImplicitRootCaptureSetTree => implicitRootCaptureSetTree
-      case brandTree: MarkTree => brandTree
+      case markTree: MarkTree => markTree
     }
     loweredCapDescr.setResolvedDescrOpt(captureDescrTree.getResolvedDescrOpt)
     loweredCapDescr
