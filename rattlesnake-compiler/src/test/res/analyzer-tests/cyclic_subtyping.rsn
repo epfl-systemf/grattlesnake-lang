@@ -1,5 +1,5 @@
 
-datatype A : B {}
+datatype A : B {}     //> E : cycle found in datastruct subtyping: A <: B <: D <: E <: A
 
 datatype B : D {}
 
@@ -7,7 +7,7 @@ datatype C : B {}
 
 datatype D : E {}
 
-datatype E : A {}  //> E : cyclic subtyping: cycle involves E
+datatype E : A {}
 
 datatype F {}
 

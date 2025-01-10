@@ -20,15 +20,15 @@ import scala.collection.mutable
 
 final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
   private val modules: mutable.Map[TypeIdentifier, ModuleSignature] = mutable.Map.empty
-  private val packages: mutable.Map[TypeIdentifier, PackageSignature] =
+  private val packages: mutable.Map[TypeIdentifier, (PackageSignature, Option[Position])] =
     mutable.Map.from(Device.values.map { device =>
-      device.typeName -> PackageSignature(
+      device.typeName -> (PackageSignature(
         id = device.typeName,
         importedPackages = mutable.LinkedHashSet.empty,
         importedDevices = mutable.LinkedHashSet.empty,
         functions = device.api.functions,
         languageMode = OcapEnabled
-      )
+      ), None)
     })
   private val structs: mutable.Map[TypeIdentifier, (StructSignature, Option[Position])] = mutable.Map.empty
   private val constants: mutable.Map[FunOrVarId, Type] = mutable.Map.empty
@@ -49,7 +49,7 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
       val functions = extractFunctions(packageDef)
       val (implicitlyImportedPackages, implicitlyImportedDevices) = trackPackagesAndDevices(packageDef)
       val sig = PackageSignature(packageName, implicitlyImportedPackages, implicitlyImportedDevices, functions, langMode)
-      packages.put(packageName, sig)
+      packages.put(packageName, (sig, packageDef.getPosition))
     }
   }
 
@@ -80,12 +80,13 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
   def build(): AnalysisContext = {
     val builtCtx = new AnalysisContext(
       modules.toMap,
-      packages.toMap,
+      packages.map((tid, sigAndPos) => (tid, sigAndPos._1)).toMap,
       structs.map((tid, sigAndPos) => (tid, sigAndPos._1)).toMap,
       constants.toMap
     )
     checkAndResolveSubstructuring(builtCtx)
     checkSubtypingCycles(builtCtx.structs)
+    checkPackageCycles(builtCtx.packages)
     builtCtx
   }
 
@@ -304,30 +305,56 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
     }
   }
 
+  private def checkPackageCycles(builtPackagesMap: Map[TypeIdentifier, PackageSignature]): Unit = {
+    findCycle(builtPackagesMap.keys.toSeq.sortBy(_.stringId),
+      tid =>
+        builtPackagesMap.get(tid).toList.flatMap(_.importedPackages)
+        .filter(imp => builtPackagesMap.get(imp).exists(_.languageMode.isOcapEnabled))
+    ).foreach { cycle =>
+      val posOpt = packages.get(cycle.head).flatMap(_._2)
+      reportError("ocap packages do not compose in an ocap-compliant manner: cyclic dependency found that involves " +
+        "the following packages: " + cycle.mkString(", "), posOpt)
+    }
+  }
+
   private def checkSubtypingCycles(builtStructMap: Map[TypeIdentifier, StructSignature]): Unit = {
+    findCycle(builtStructMap.keys.toSeq.sortBy(_.stringId),
+      tid => builtStructMap.get(tid).toList.flatMap(_.directSupertypes).sortBy(_.stringId)
+    ).foreach { cycle =>
+      val posOpt = structs.get(cycle.head).flatMap(_._2)
+      reportError("cycle found in datastruct subtyping: " + cycle.mkString(" <: ") + " <: " + cycle.head, posOpt)
+    }
+  }
 
-    // DFS
+  private def findCycle[V](roots: Iterable[V], getAdjSet: V => Iterable[V]): Option[Seq[V]] = {
+    val alreadyFound = mutable.Set.empty[V]
+    val cycleStack = mutable.Stack.empty[V]
+    val inStack = mutable.Set.empty[V]
 
-    val maxDepth = builtStructMap.size
     var found = false
-    val iter = structs.iterator
-    while (iter.hasNext && !found) {
 
-      val (currId, (_, posOpt)) = iter.next()
-
-      def findCycleFrom(start: TypeIdentifier, target: TypeIdentifier, depth: Int): Unit = {
-        if (start == target && depth > 0) {
-          reportError(s"cyclic subtyping: cycle involves $start", posOpt)
-          found = true
-        } else if (depth < maxDepth) {
-          for (child <- builtStructMap.apply(start).directSupertypes) {
-            findCycleFrom(child, target, depth + 1)
-          }
+    def exploreFrom(v: V): Unit = {
+      found |= inStack(v)
+      if (!found && !alreadyFound(v)){
+        alreadyFound.add(v)
+        cycleStack.push(v)
+        inStack.add(v)
+        for u <- getAdjSet(v) do {
+          exploreFrom(u)
+        }
+        if (!found){
+          inStack.remove(v)
+          cycleStack.pop()
         }
       }
-
-      findCycleFrom(currId, currId, depth = 0)
     }
+
+    val iter = roots.iterator
+    while (!found && iter.hasNext){
+      val root = iter.next()
+      exploreFrom(root)
+    }
+    if found then Some(cycleStack.toSeq.reverse) else None
   }
 
 }
