@@ -66,26 +66,26 @@ mut struct CellWithTree : Cell, TreeCell {
 package Test {
 
     main fn testF(arr String) {
-        val r = newregion;
-        val c1 = new@r CellWithMemoLastInitAndMsg(42, 9, 42, "Hello world");
-        val c2: Cell^{r} = c1;
-        val x = c2.value * c2.value;
-        c2.value = -1;
-        val c3 = new@r SimpleCell(c1.value + c1.initValue);
-        val t = new@r Fork(r,
-                    new@r Leaf(c2.value),
-                    c3.value,
-                    new@r Fork(r,
-                        new@r Leaf(c1.initValue),
-                        c1.lastValue,
-                        new@r Leaf(74)
-                    )
-                );
-        Cells.setRightmost(t, 27);
-        t.left = new@t.r Fork(t.r, new@t.r Leaf(x), (new@t.r SimpleCell(75)).value, t.left);
-        val s = newregion;
-        val array = Cells.toArray(t, s);
-        testArray([42*42, 75, -1, 8, 9, 42, 27], array);
+        withreg r, s {
+            val c1 = new@r CellWithMemoLastInitAndMsg(42, 9, 42, "Hello world");
+            val c2: Cell^{r} = c1;
+            val x = c2.value * c2.value;
+            c2.value = -1;
+            val c3 = new@r SimpleCell(c1.value + c1.initValue);
+            val t = new@r Fork(r,
+                        new@r Leaf(c2.value),
+                        c3.value,
+                        new@r Fork(r,
+                            new@r Leaf(c1.initValue),
+                            c1.lastValue,
+                            new@r Leaf(74)
+                        )
+                    );
+            Cells.setRightmost(t, 27);
+            t.left = new@t.r Fork(t.r, new@t.r Leaf(x), (new@t.r SimpleCell(75)).value, t.left);
+            val array = Cells.toArray(t, s);
+            testArray([42*42, 75, -1, 8, 9, 42, 27], array);
+        }
     }
 
     fn testArray(expected: arr Int, actual: arr^ Int){

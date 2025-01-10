@@ -4,9 +4,12 @@ const c_array_size = 100000;
 package Main {
 
     fn testF() -> Int {
-        val r = newregion;
-        val array = generateArray(r);
-        return max(array);
+        val max: Int;
+        withreg r {
+            val array = generateArray(r);
+            max = max(array);
+        };
+        return max;
     }
 
     main fn main_(arr String){

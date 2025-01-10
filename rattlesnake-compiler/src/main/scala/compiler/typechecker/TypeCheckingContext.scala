@@ -4,7 +4,7 @@ import compiler.analysisctx.AnalysisContext
 import compiler.pipeline.CompilationStep.TypeChecking
 import compiler.reporting.Errors.{ErrorReporter, Warning}
 import compiler.reporting.{Errors, Position}
-import compiler.typechecker.TypeCheckingContext.{LocalInfo, LocalUsesCollector, globalsScopeDepth}
+import compiler.typechecker.TypeCheckingContext.{LocalInfo, LocalUsesCollector}
 import identifiers.{FunOrVarId, SpecialFields, TypeIdentifier}
 import lang.*
 import lang.Capturables.{ConcreteCapturable, IdPath, Path, RootCapability}
@@ -25,7 +25,7 @@ final case class TypeCheckingContext private(
                                               currentFunIdOpt: Option[FunOrVarId],
                                               private val importedPackages: Set[TypeIdentifier],
                                               private val importedDevices: Set[Device],
-                                              scopeDepth: Int,
+                                              insideRegionsScope: Boolean,
                                               insideEnclosure: Boolean,
                                               currentRestriction: CaptureSet
                                             ) {
@@ -37,14 +37,15 @@ final case class TypeCheckingContext private(
   // Locals that have been created by this context (i.e. not obtained via a copy)
   private val ownedLocals: mutable.Set[FunOrVarId] = mutable.Set.empty
 
-  def copyForSubScope: TypeCheckingContext =
-    copy(locals = mutable.Map.from(locals), scopeDepth = scopeDepth + 1)
+  def copyForSubScope: TypeCheckingContext = copy(locals = mutable.Map.from(locals))
 
   def copyWithSmartCasts(smartCasts: Map[FunOrVarId, TypeShape]): TypeCheckingContext = {
     copy(locals = locals.map {
       case (id, info) => id -> info.copy(tpe = smartCasts.getOrElse(id, info.tpe))
     })
   }
+  
+  def copyForRegionScope: TypeCheckingContext = copy(insideRegionsScope = true)
   
   def copyWithRestriction(restr: CaptureSet): TypeCheckingContext = copy(currentRestriction = restr)
   
@@ -73,7 +74,7 @@ final case class TypeCheckingContext private(
     } else if (locals.contains(name)) {
       duplicateVarCallback()
     } else {
-      locals.put(name, LocalInfo(name, tpe, isReassignable, defPos, declHasTypeAnnot, scopeDepth))
+      locals.put(name, LocalInfo(name, tpe, isReassignable, defPos, declHasTypeAnnot))
       ownedLocals.addOne(name)
     }
   }
@@ -85,7 +86,7 @@ final case class TypeCheckingContext private(
       analysisContext.constants
         .get(name)
         // defPos and declHasTypeAnnot are never used for constants, as long as constants can only be of primitive types
-        .map(tpe => LocalInfo(name, tpe, isReassignable = false, defPos = None, declHasTypeAnnot = false, globalsScopeDepth))
+        .map(tpe => LocalInfo(name, tpe, isReassignable = false, defPos = None, declHasTypeAnnot = false))
     )
   }
 
@@ -151,6 +152,8 @@ final case class TypeCheckingContext private(
   def isCurrentFunc(owner: TypeIdentifier, funId: FunOrVarId): Boolean = {
     owner == meTypeId && currentFunIdOpt.contains(funId)
   }
+  
+  def returnIsPermitted: Boolean = !(insideRegionsScope || insideEnclosure)
 
   def localIsQueried(localId: FunOrVarId): Unit = {
     locals.get(localId).foreach { l =>
@@ -165,7 +168,7 @@ final case class TypeCheckingContext private(
   }
 
   def writeLocalsRelatedWarnings(errorReporter: ErrorReporter): Unit = {
-    for (_, LocalInfo(name, tpe, isReassignable, defPos, declHasTypeAnnot, declaringEnvir, usesCollector)) <- locals if ownedLocals.contains(name) do {
+    for (_, LocalInfo(name, tpe, isReassignable, defPos, declHasTypeAnnot, usesCollector)) <- locals if ownedLocals.contains(name) do {
       if (!usesCollector.queried) {
         errorReporter.push(Warning(TypeChecking, s"unused local: '$name' is never queried", defPos))
       } else if (isReassignable && !usesCollector.reassigned) {
@@ -180,10 +183,6 @@ final case class TypeCheckingContext private(
 
 object TypeCheckingContext {
 
-  val globalsScopeDepth: Int = -2
-  val topLevelDefsParamsScopeDepth: Int = globalsScopeDepth + 1
-  val functionParamsScopeDepth: Int = topLevelDefsParamsScopeDepth + 1
-
   def apply(
              analysisContext: AnalysisContext,
              meTypeId: TypeIdentifier,
@@ -191,12 +190,12 @@ object TypeCheckingContext {
              currFunIdOpt: Option[FunOrVarId],
              allowedPackages: Set[TypeIdentifier],
              allowedDevices: Set[Device],
-             scopeDepth: Int,
+             insideRegionsScope: Boolean,
              insideEnclosure: Boolean,
              currentRestriction: CaptureSet
            ): TypeCheckingContext = {
     new TypeCheckingContext(analysisContext, mutable.Map.empty, meTypeId,
-      meCaptureDescr, currFunIdOpt, allowedPackages, allowedDevices, scopeDepth,
+      meCaptureDescr, currFunIdOpt, allowedPackages, allowedDevices, insideRegionsScope,
       insideEnclosure, currentRestriction)
   }
 
@@ -206,7 +205,6 @@ object TypeCheckingContext {
                                       isReassignable: Boolean,
                                       defPos: Option[Position],
                                       declHasTypeAnnot: Boolean,
-                                      scopeDepth: Int,
                                       usesCollector: LocalUsesCollector
                                     ) {
     def copy(
@@ -215,10 +213,9 @@ object TypeCheckingContext {
               isReassignable: Boolean = isReassignable,
               defPos: Option[Position] = defPos,
               declHasTypeAnnot: Boolean = declHasTypeAnnot,
-              scopeDepth: Int = scopeDepth,
               usesCollector: LocalUsesCollector = usesCollector
             ): LocalInfo = {
-      LocalInfo(name, tpe, isReassignable, defPos, declHasTypeAnnot, scopeDepth, usesCollector)
+      LocalInfo(name, tpe, isReassignable, defPos, declHasTypeAnnot, usesCollector)
     }
   }
 
@@ -228,10 +225,9 @@ object TypeCheckingContext {
                tpe: Type,
                isReassignable: Boolean,
                defPos: Option[Position],
-               declHasTypeAnnot: Boolean,
-               scopeDepth: Int
+               declHasTypeAnnot: Boolean
              ): LocalInfo = {
-      new LocalInfo(name, tpe, isReassignable, defPos, declHasTypeAnnot, scopeDepth, new LocalUsesCollector())
+      new LocalInfo(name, tpe, isReassignable, defPos, declHasTypeAnnot, new LocalUsesCollector())
     }
   }
 

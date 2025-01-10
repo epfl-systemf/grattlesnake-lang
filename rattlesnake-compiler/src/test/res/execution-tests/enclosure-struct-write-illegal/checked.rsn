@@ -2,14 +2,14 @@
 package Main {
 
     main fn program(arr String){
-        val lsReg = newregion;
-        val ls = Lists.mkList(lsReg, [12, 37, 41, 22, 28, 55, 39, 102, 9]);
-        val cntReg = newregion;
-        val counter = new@cntReg Counter(0, 0);
-        enclosed {cntReg} {
-            Untrusted.countOddsAndEvens(#ls, #counter);   //>STACKTRACE
-        };
-        console.print(Counters.toString(counter));
+        withreg lsReg, cntReg {
+            val ls = Lists.mkList(lsReg, [12, 37, 41, 22, 28, 55, 39, 102, 9]);
+            val counter = new@cntReg Counter(0, 0);
+            enclosed {cntReg} {
+                Untrusted.countOddsAndEvens(#ls, #counter);   //>STACKTRACE
+            };
+            console.print(Counters.toString(counter));
+        }
     }
 
 }

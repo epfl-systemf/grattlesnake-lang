@@ -1,19 +1,20 @@
+import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-
+@SuppressWarnings("unused")
 public final class FileSystem {
 
     public static final FileSystem $INSTANCE = new FileSystem();
 
     private final AtomicInteger idGen = new AtomicInteger();
-    private final Map<Integer, FileReader> readers = new HashMap<>();
-    private final Map<Integer, FileWriter> writers = new HashMap<>();
+    private final Int2ObjectMap<FileReader> readers = new Int2ObjectArrayMap<>();
+    private final Int2ObjectArrayMap<FileWriter> writers = new Int2ObjectArrayMap<>();
 
     public int openR(String path) throws IOException {
         Rattlesnake$runtime.assertFileSystemAllowed();

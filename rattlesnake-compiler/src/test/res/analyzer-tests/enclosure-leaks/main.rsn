@@ -10,25 +10,28 @@ package Main {
         enclosed {} {
             xs = Unsafe.genArray();     // OK
         };
-        val r = newregion;
-        val ys: arr^{r} Int;
-        enclosed {} {
-            ys = Unsafe.genArray();     //> E : expected 'arr^{r} Int', found 'arr^# Int'
+        val res: Int;
+        withreg r {
+            val ys: arr^{r} Int;
+            enclosed {} {
+                ys = Unsafe.genArray();     //> E : expected 'arr^{r} Int', found 'arr^# Int'
+            };
+            val f: Foo^{r,fs};
+            enclosed {} {
+                f = Unsafe.genStruct();     //> E : expected 'Foo^{fs, r}', found 'Foo^#'
+            };
+            val b: Bar^{r};
+            enclosed {r} {
+                b = genBar(r);              // OK
+            };
+            // TODO more test cases
+            val length: Int;
+            enclosed {} {
+                length = len xs;
+            };
+            res = x + length + len ys + f.i + b.i;
         };
-        val f: Foo^{r,fs};
-        enclosed {} {
-            f = Unsafe.genStruct();     //> E : expected 'Foo^{fs, r}', found 'Foo^#'
-        };
-        val b: Bar^{r};
-        enclosed {r} {
-            b = genBar(r);              // OK
-        };
-        // TODO more test cases
-        val length: Int;
-        enclosed {} {
-            length = len xs;
-        };
-        return x + length + len ys + f.i + b.i;
+        return res;
     }
 
     fn genBar(r: Region^) -> Bar^{r} {

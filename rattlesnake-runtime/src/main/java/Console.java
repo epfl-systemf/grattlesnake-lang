@@ -1,4 +1,5 @@
 
+@SuppressWarnings("unused")
 public final class Console {
 
     public static final Console $INSTANCE = new Console();

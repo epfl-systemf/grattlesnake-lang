@@ -1,17 +1,16 @@
 
 package Test {
 
-    fn test(r: Region^) -> Region^ {
+    fn test(r: Region^) -> Foo^ {
         var f: Foo^ = new@r Foo(10);    //> E : type Foo^ is forbidden in var position, as it captures the root capability
         val g: Foo^ = new@r Foo(10);    // OK
-        val h: Region^;                 //> E : type Region^ is forbidden in uninitialized val position, as it captures the root capability
-        h = newregion;
+        val h: Foo^;                    //> E : type Foo^ is forbidden in uninitialized val position, as it captures the root capability
 
         // avoid warnings
         f.i + g.i;
         f = g;
 
-        return h;
+        return h;  // uninitialized h is not reported because cf-analysis (later phase) is prevented by the other errors
     }
 
 }

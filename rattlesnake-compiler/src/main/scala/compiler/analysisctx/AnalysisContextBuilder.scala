@@ -266,7 +266,7 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
               currFunIdOpt = None,
               allowedPackages = builtCtx.packages.keySet,
               allowedDevices = Device.values.toSet,
-              TypeCheckingContext.topLevelDefsParamsScopeDepth,
+              insideRegionsScope = false,
               insideEnclosure = false,
               currentRestriction = CaptureSet.singletonOfRoot
             )

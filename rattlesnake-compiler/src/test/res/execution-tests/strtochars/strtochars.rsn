@@ -2,7 +2,9 @@
 package Test {
 
     main fn testFunc(arr String) {
-        printArrayWeird(toCharsArray("Rattlesnake", newregion))
+        withreg r {
+            printArrayWeird(toCharsArray("Rattlesnake", r))
+        }
     }
 
     fn toCharsArray(s: String, arrReg: Region^) -> arr^{arrReg} Char {

@@ -1,8 +1,10 @@
+import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 
 import java.util.WeakHashMap;
 
+@SuppressWarnings("unused")
 public final class Rattlesnake$runtime {
 
     private Rattlesnake$runtime() {
@@ -130,14 +132,30 @@ public final class Rattlesnake$runtime {
 
     /// / REGIONS ////
 
-    private static int lastRegion = 0;
+    private static int highestRegion = 0;
+    private static final IntArrayFIFOQueue freeRegions = new IntArrayFIFOQueue();
 
-    public static int newRegion() {
-        var r = ++lastRegion;
-        if (currentEnvir != null) {
-            currentEnvir.regions.add(r);
+    public static int allocRegion() {
+        int reg;
+        if (freeRegions.isEmpty()){
+            reg = ++highestRegion;
+        } else {
+            reg = freeRegions.dequeueInt();
         }
-        return r;
+        if (currentEnvir != null){
+            currentEnvir.regions.add(reg);
+        }
+        return reg;
+    }
+
+    public static void deallocRegion(int reg){
+        freeRegions.enqueue(reg);
+    }
+
+    public static void assertNoMemoryLeak(){
+        if (freeRegions.size() != highestRegion){
+            throw new RuntimeException("program terminated successfully but some regions were not deallocated");
+        }
     }
 
 }

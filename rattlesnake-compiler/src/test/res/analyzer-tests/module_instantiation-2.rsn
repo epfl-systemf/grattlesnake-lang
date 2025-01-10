@@ -14,11 +14,11 @@ module Bar(rg: Region^, foo: Foo^{rg}){
 package Main {
 
     main fn program(arr String){
-        val r = newregion;
-        val s = newregion;
-        val bar = new Bar(r, new@r Foo(99));
-        val foo: Foo^{s} = bar.getFoo();    //> E : local definition: expected 'Foo^{s}', found 'Foo^{bar.rg}'
-        console.print(foo.i as String);
+        withreg r, s {
+            val bar = new Bar(r, new@r Foo(99));
+            val foo: Foo^{s} = bar.getFoo();    //> E : local definition: expected 'Foo^{s}', found 'Foo^{bar.rg}'
+            console.print(foo.i as String);
+        }
     }
 
 }

@@ -14,10 +14,11 @@ module Bar(rg: Region^, foo: Foo^{rg}){
 package Main {
 
     main fn program(arr String){
-        val r = newregion;
-        val bar = new Bar(r, new@r Foo(99));
-        val foo: Foo^{r} = bar.getFoo();
-        console.print(foo.i as String);
+        withreg r {
+            val bar = new Bar(r, new@r Foo(99));
+            val foo: Foo^{r} = bar.getFoo();
+            console.print(foo.i as String);
+        }
     }
 
 }

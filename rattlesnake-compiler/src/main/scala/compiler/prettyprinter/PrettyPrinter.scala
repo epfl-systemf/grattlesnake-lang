@@ -261,9 +261,6 @@ final class PrettyPrinter(indentGranularity: Int = 2, displayAllParentheses: Boo
         pps.add(structName)
         addParenthList(args)
 
-      case RegionCreation() =>
-        pps.add(NewRegion.str)
-
       case UnaryOp(operator, operand) =>
         pps.add(operator.str)
         if (operator.isNamedOperator){
@@ -411,6 +408,20 @@ final class PrettyPrinter(indentGranularity: Int = 2, displayAllParentheses: Boo
           .add(Panic.str)
           .addSpace()
         addAst(msg)
+
+      case RegionsStat(declRegions, body) =>
+        pps
+          .add(WithReg.str)
+          .addSpace()
+        val regIter = declRegions.iterator
+        while (regIter.hasNext){
+          pps.add(regIter.next())
+          if (regIter.hasNext){
+            pps.add(", ")
+          }
+        }
+        pps.addSpace()
+        addAst(body)
 
       case RestrictedStat(capSetTree, body) =>
         pps

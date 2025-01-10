@@ -23,13 +23,14 @@ mut struct Bar {
 package Test {
 
     fn test() -> Bar^{fs} {
-        val r1 = newregion;
-        val r2 = newregion;
-        val foo1 = new@r1 Foo(42);
-        val foo2 = new@r2 Foo(0);
-        val foo3 = new@r2 Foo(75);
-        val foo4 = new@r1 Foo(100);
-        val bar: Bar = new@r2 Bar(r1, r2, foo1, foo2, foo3, foo4); //> E : local definition: expected 'Bar', found 'Bar^{Abc, foo1, foo4, r1, r2}' <//> W : type is not inhabited: Bar should have a capture descriptor
+        val bar: Bar;               //> W : type is not inhabited: Bar should have a capture descriptor
+        withreg r1, r2 {
+            val foo1 = new@r1 Foo(42);
+            val foo2 = new@r2 Foo(0);
+            val foo3 = new@r2 Foo(75);
+            val foo4 = new@r1 Foo(100);
+            bar = new@r2 Bar(r1, r2, foo1, foo2, foo3, foo4); //> E : expected 'Bar', found 'Bar^{Abc, foo1, foo4, r1, r2}'
+        };
         return bar;
     }
 

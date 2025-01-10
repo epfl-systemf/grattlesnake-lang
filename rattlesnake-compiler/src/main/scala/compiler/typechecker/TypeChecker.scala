@@ -71,7 +71,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         currFunIdOpt = None,
         moduleSig.importedPackages.toSet,
         moduleSig.importedDevices.toSet,
-        TypeCheckingContext.topLevelDefsParamsScopeDepth,
+        insideRegionsScope = false,
         insideEnclosure = false,
         currentRestriction = CaptureSet.singletonOfRoot
       )
@@ -93,7 +93,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         currFunIdOpt = None,
         analysisContext.packages.keySet,
         Device.values.toSet,
-        TypeCheckingContext.globalsScopeDepth,
+        insideRegionsScope = false,
         insideEnclosure = false,
         currentRestriction = CaptureSet.singletonOfRoot
       )
@@ -132,7 +132,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
           meCaptureDescr = CaptureSet.empty,
           allowedPackages = Set.empty,
           allowedDevices = Set.empty,
-          TypeCheckingContext.globalsScopeDepth,
+          insideRegionsScope = false,
           insideEnclosure = false,
           currentRestriction = CaptureSet.singletonOfRoot
         )
@@ -177,7 +177,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
       reportError("only packages can contain a main function", funDef.getPosition)
     }
     val tcCtx = TypeCheckingContext(analysisContext, meId, meCaptureDescr, Some(funName),
-      allowedPackages, allowedDevices, TypeCheckingContext.functionParamsScopeDepth,
+      allowedPackages, allowedDevices, insideRegionsScope = false,
       insideEnclosure = false, currentRestriction = CaptureSet.singletonOfRoot
     )
     for param <- params do {
@@ -414,9 +414,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
       newCtx.writeLocalsRelatedWarnings(errorReporter)
 
     case localDef@LocalDef(localName, optTypeAnnotTree, rhsOpt, isReassignable) =>
-      if (tcCtx.constants.contains(localName)){
-        reportError(s"illegal name for local: $localName is already defined as a constant", localDef.getPosition)
-      }
+      checkNoNameClashWithConstants(localName, localDef.getPosition)
       val inferredTypeOpt = rhsOpt.map(checkExpr)
       val optAnnotType = optTypeAnnotTree.map { typeAnnotTree =>
         val annotType = checkType(typeAnnotTree, idsAreFields = false)(using tcCtx)
@@ -518,8 +516,8 @@ final class TypeChecker(errorReporter: ErrorReporter)
       newCtx.writeLocalsRelatedWarnings(errorReporter)
 
     case retStat@ReturnStat(valueOpt) =>
-      if (tcCtx.insideEnclosure){
-        reportError("return statements are not allowed inside enclosures", retStat.getPosition)
+      if (!tcCtx.returnIsPermitted) {
+        reportError("return statements are not allowed inside region scopes and enclosures", retStat.getPosition)
       }
       valueOpt.foreach { value =>
         val retType = checkExpr(value)
@@ -536,6 +534,17 @@ final class TypeChecker(errorReporter: ErrorReporter)
     case panicStat@PanicStat(msg) =>
       val msgType = checkExpr(msg)
       checkSubtypingConstraint(StringType, msgType, panicStat.getPosition, "panic")
+
+    case regStat@RegionsStat(declRegions, body) =>
+      featureIsNotAllowedIfOcapDisabled("regions", regStat.getPosition)
+      for regName <- declRegions do {
+        checkNoNameClashWithConstants(regName, regStat.getPosition)
+        tcCtx.addLocal(regName, RegionType ^ CaptureSet.singletonOfRoot, regStat.getPosition,
+          isReassignable = false, declHasTypeAnnot = false, duplicateVarCallback = { () =>
+            reportError(s"'$regName' is already defined in this scope", regStat.getPosition)
+          }, forbiddenTypeCallback = () => ())
+      }
+      checkStat(body)(using tcCtx.copyForRegionScope, ambientLangMode)
 
     case restr@RestrictedStat(captureSetTree, body) =>
       featureIsNotAllowedIfOcapDisabled("restricted", restr.getPosition)
@@ -558,6 +567,13 @@ final class TypeChecker(errorReporter: ErrorReporter)
         }
       }
       checkStat(body)(using tcCtx.copyForEnclosure)
+  }
+
+  private def checkNoNameClashWithConstants(localName: FunOrVarId, posOpt: Option[Position])
+                                           (using tcCtx: TypeCheckingContext): Unit = {
+    if (tcCtx.constants.contains(localName)) {
+      reportError(s"illegal name for local: $localName is already defined as a constant", posOpt)
+    }
   }
 
   private def checkLiteralExpr(literal: Literal): Type = literal match {
@@ -695,10 +711,6 @@ final class TypeChecker(errorReporter: ErrorReporter)
             NamedTypeShape(tid) ^ cd
           case _ => reportError(s"not found: structure or module '$tid'", instantiation.getPosition)
         }
-
-      case regCreation@RegionCreation() =>
-        featureIsNotAllowedIfOcapDisabled("regions", regCreation.getPosition)
-        RegionType ^ CaptureSet.singletonOfRoot
 
       case unaryOp@UnaryOp(operator, operand) =>
         val operandType = checkExpr(operand)
@@ -939,7 +951,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
       currFunIdOpt = Some(funSig.name),
       callerCtx.analysisContext.packages.keySet,
       Device.values.toSet,
-      TypeCheckingContext.functionParamsScopeDepth,
+      insideRegionsScope = false,
       insideEnclosure = false,
       currentRestriction = CaptureSet.singletonOfRoot
     )
@@ -1069,7 +1081,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         currFunIdOpt = None,
         callerCtx.analysisContext.packages.keySet,
         Device.values.toSet,
-        TypeCheckingContext.topLevelDefsParamsScopeDepth,
+        insideRegionsScope = false,
         insideEnclosure = false,
         currentRestriction = CaptureSet.singletonOfRoot
       )

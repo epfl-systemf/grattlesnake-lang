@@ -19,12 +19,13 @@ package Test {
     }
     
     main fn testF(arr String) -> Void {
-        val s = newregion;
-        val a = new@s A(25, 12.5);
-        var t = a.x;
-        me.mulX(s, a, 32);
-        t -= a.x;
-        console.print(t as String);
+        withreg s {
+            val a = new@s A(25, 12.5);
+            var t = a.x;
+            me.mulX(s, a, 32);
+            t -= a.x;
+            console.print(t as String);
+        }
     }
 
 }

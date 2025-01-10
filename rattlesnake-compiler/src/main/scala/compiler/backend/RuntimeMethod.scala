@@ -13,8 +13,10 @@ enum RuntimeMethod(name: String, mthDescr: String) {
   case AllowRegion extends RuntimeMethod("allowRegion", "(I)V")
   case PushEnvir extends RuntimeMethod("pushEnvir", "()V")
   case PopEnvir extends RuntimeMethod("popEnvir", "()V")
-  case NewRegion extends RuntimeMethod("newRegion", "()I")
+  case AllocRegion extends RuntimeMethod("allocRegion", "()I")
+  case DeallocRegion extends RuntimeMethod("deallocRegion", "(I)V")
   case RegionOf extends RuntimeMethod("regionOf", "(Ljava/lang/Object;)I")
+  case AssertNoMemoryLeak extends RuntimeMethod("assertNoMemoryLeak", "()V")
   
   def generateCall(mv: MethodVisitor)(using AnalysisContext): Unit = {
     mv.visitMethodInsn(Opcodes.INVOKESTATIC, runtimeClassName, name, mthDescr, false)

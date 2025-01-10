@@ -2,10 +2,11 @@
 package Main {
 
     main fn program(arr String){
-        val r = newregion;
-        val array = arr@r Int[0];
-        enclosed {} {
-            Unsafe.shuffle(#array);   //>STACKTRACE
+        withreg r {
+            val array = arr@r Int[0];
+            enclosed {} {
+                Unsafe.shuffle(#array);   //>STACKTRACE
+            }
         }
     }
 

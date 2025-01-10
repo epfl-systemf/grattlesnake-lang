@@ -12,7 +12,7 @@ import compiler.reporting.Errors.*
 import compiler.reporting.Position
 import identifiers.*
 import lang.*
-import lang.Device.FileSystem
+import lang.CaptureDescriptors.CaptureSet
 import lang.Operator.*
 import lang.Types.PrimitiveTypeShape.*
 import lang.Types.{ArrayTypeShape, NamedTypeShape, PrimitiveTypeShape, UnionTypeShape}
@@ -202,6 +202,7 @@ final class Backend[V <: ClassVisitor](
     if (retType != VoidType && retType != NothingType){
       mv.visitInsn(if TypesConverter.numSlotsFor(retType.shape) == 1 then Opcodes.POP else Opcodes.POP2)
     }
+    RuntimeMethod.AssertNoMemoryLeak.generateCall(mv)
     mv.visitInsn(Opcodes.RETURN)
     mv.visitMaxs(0, 0)
     mv.visitEnd()
@@ -540,9 +541,6 @@ final class Backend[V <: ClassVisitor](
           RuntimeMethod.SaveObjectInRegion.generateCall(mv)
         }
 
-      case RegionCreation() =>
-        RuntimeMethod.NewRegion.generateCall(mv)
-
       case UnaryOp(operator, operand) =>
         generateCode(operand, ctx)
         operator match {
@@ -791,6 +789,19 @@ final class Backend[V <: ClassVisitor](
         mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/RuntimeException",
           ConstructorFunId.stringId, s"(L$stringTypeStr;)V", false)
         mv.visitInsn(Opcodes.ATHROW)
+
+      case RegionsStat(declRegions, body) =>
+        val innerCtx = ctx.withNewLocalsFrame
+        for regId <- declRegions do {
+          innerCtx.addLocal(regId, RegionType ^ CaptureSet.singletonOfRoot)
+          RuntimeMethod.AllocRegion.generateCall(mv)
+          mv.visitVarInsn(Opcodes.ISTORE, innerCtx.getLocal(regId).get._2)
+        }
+        generateCode(body, innerCtx)
+        for regId <- declRegions.reverse do {
+          mv.visitVarInsn(Opcodes.ILOAD, innerCtx.getLocal(regId).get._2)
+          RuntimeMethod.DeallocRegion.generateCall(mv)
+        }
 
       case RestrictedStat(capabilities, body) =>
         generateCode(body, ctx)

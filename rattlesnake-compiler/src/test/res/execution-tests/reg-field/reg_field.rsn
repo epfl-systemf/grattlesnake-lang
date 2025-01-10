@@ -2,18 +2,20 @@
 package Main {
 
     main fn test(arr String){
-        val r = newregion;
-        val a = arr@r Int[10];
-        val fooStruct: Foo^{a.reg} = new@a.reg Foo(42);
-        console.print((a.reg == fooStruct.reg) as String);
-        console.print(" - ");
-        foo(fooStruct);
+        withreg r {
+            val a = arr@r Int[10];
+            val fooStruct: Foo^{a.reg} = new@a.reg Foo(42);
+            console.print((a.reg == fooStruct.reg) as String);
+            console.print(" - ");
+            foo(fooStruct);
+        }
     }
 
     fn foo(f1: Foo^){
-        val r = newregion;
-        val f2 = new@r Foo(84);
-        console.print((f2.reg == f1.reg) as String);
+        withreg r {
+            val f2 = new@r Foo(84);
+            console.print((f2.reg == f1.reg) as String);
+        }
     }
 
 }

@@ -166,24 +166,18 @@ final class Lowerer extends CompilerStep[(List[Source], AnalysisContext), (List[
       case deviceRef: DeviceRef => deviceRef
       case call: Call => lower(call)
       case indexing: Indexing => Indexing(lower(indexing.indexed), lower(indexing.arg))
-      case arrayInit: ArrayInit => ArrayInit(arrayInit.regionOpt.map(lower), arrayInit.elemType, lower(arrayInit.size))
+      case arrayInit: ArrayInit => ArrayInit(arrayInit.regionOpt.map(lower), lower(arrayInit.elemType), lower(arrayInit.size))
       case instantiation: StructOrModuleInstantiation =>
         StructOrModuleInstantiation(instantiation.regionOpt.map(lower), instantiation.typeId, instantiation.args.map(lower))
-      case regionCreation: RegionCreation => regionCreation
       
       // [x_1, ... , x_n] ---> explicit assignments
       case filledArrayInit@FilledArrayInit(arrayElems, regionOpt) =>
-        /* Argument for soundness of creating a region here:
-         * This creation happens only when the region is not specified in the original AST, i.e. when the array is 
-         * meant to be immutable. The type of the expression is therefore an immutable array type that captures no 
-         * region, hence the region does not exit the code in the Sequence. */
-        val region = regionOpt.getOrElse(RegionCreation())
         val arrayType = filledArrayInit.getType
         val arrayShape = arrayType.shape.asInstanceOf[ArrayTypeShape]
         val elemType = arrayShape.elemType
         val arrValId = uniqueIdGenerator.next()
         val arrValRef = VariableRef(arrValId).setType(arrayType)
-        val arrInit = ArrayInit(Some(region), WrapperTypeTree(elemType), IntLit(arrayElems.size)).setType(arrayType)
+        val arrInit = ArrayInit(regionOpt, WrapperTypeTree(elemType), IntLit(arrayElems.size)).setType(arrayType)
         val arrayValDefinition = LocalDef(arrValId, Some(WrapperTypeTree(arrayType)), Some(arrInit), isReassignable = false)
         arrayValDefinition.setVarType(arrayType)
         val arrElemAssigStats = arrayElems.map(lower).zipWithIndex.map {
@@ -281,6 +275,7 @@ final class Lowerer extends CompilerStep[(List[Source], AnalysisContext), (List[
       case forLoop: ForLoop => lower(forLoop)
       case returnStat: ReturnStat => lower(returnStat)
       case panicStat: PanicStat => lower(panicStat)
+      case regionsStat: RegionsStat => lower(regionsStat)
       case restrictedStat: RestrictedStat => lower(restrictedStat)
       case enclosedStat: EnclosedStat => lower(enclosedStat)
   }
@@ -291,6 +286,10 @@ final class Lowerer extends CompilerStep[(List[Source], AnalysisContext), (List[
       case packageDef: PackageDef => lower(packageDef)
       case structDef: StructDef => lower(structDef)
       case constDef: ConstDef => lower(constDef)
+  }
+  
+  private def lower(regionsStat: RegionsStat): RegionsStat = propagatePosition(regionsStat.getPosition) {
+    RegionsStat(regionsStat.declRegions, lower(regionsStat.body))
   }
   
   private def lower(restrictedStat: RestrictedStat): RestrictedStat = propagatePosition(restrictedStat.getPosition) {
