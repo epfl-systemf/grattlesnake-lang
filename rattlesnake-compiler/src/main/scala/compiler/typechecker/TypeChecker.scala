@@ -168,7 +168,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
                              allowedDevices: Set[Device],
                              mainFunctionsCollectorOpt: Option[ListBuffer[FunDef]]
                            ): Unit = {
-    val FunDef(funName, params, optRetTypeTree, body, isMain) = funDef
+    val FunDef(funName, params, optRetTypeTree, body, visibility, isMain) = funDef
     if (isMain) {
       checkIsEligibleAsMain(funDef)
       mainFunctionsCollectorOpt.foreach(_.addOne(funDef))
@@ -207,7 +207,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
     import ArrayTypeShapeTree as ArrSh
     import PrimitiveTypeShapeTree as PrimSh
     funDef match {
-      case FunDef(_, List(Param(_, ArrSh(PrimSh(StringType)), _)), _, _, _) => ()
+      case FunDef(_, List(Param(_, ArrSh(PrimSh(StringType)), _)), _, _, Visibility.Public, _) => ()
       case _ =>
         val funSig = funDef.getSignatureOpt.get
         val expectedHeader =
@@ -871,6 +871,9 @@ final class TypeChecker(errorReporter: ErrorReporter)
     val pos = call.getPosition
     tcCtx.resolveFunc(owner, funName) match {
       case FunctionFound(ownerSig, funSig) =>
+        if (funSig.visibility.isPrivate && owner != tcCtx.meTypeId){
+          reportError(s"function $funName is private in $owner", call.getPosition)
+        }
         if (isTailrec && !tcCtx.isCurrentFunc(ownerSig.id, funName)) {
           reportError("tail calls can only be used to invoke the enclosing function", call.getPosition)
         }

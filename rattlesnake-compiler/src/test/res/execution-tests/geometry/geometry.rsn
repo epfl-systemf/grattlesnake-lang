@@ -16,7 +16,7 @@ package Test {
 
     // creates the rectangles described by rectanglesData (leftUpperX, leftUpperY, width, height) and returns them
     // fills 'areas' with their areas
-    fn createRectangles(rectanglesData: arr^ Double, r: Region^) -> arr^{r} Rectangle {
+    private fn createRectangles(rectanglesData: arr^ Double, r: Region^) -> arr^{r} Rectangle {
         if len rectanglesData % 4 != 0 {
             panic "length of rectanglesData should be a multiple of 4"
         };
@@ -41,7 +41,7 @@ package Test {
         }
     }
 
-    fn printD(x: Double){
+    private fn printD(x: Double){
         console.print(x as String + "\n")
     }
 

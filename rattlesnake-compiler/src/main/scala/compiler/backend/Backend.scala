@@ -180,7 +180,8 @@ final class Backend[V <: ClassVisitor](
     for func <- modOrPkg.functions do {
       val funSig = func.getSignatureOpt.get
       val desc = descriptorForFunc(funSig)
-      val mv = cv.visitMethod(ACC_PUBLIC, func.funName.stringId, desc, null, null)
+      val visibility = if func.visibility.isPrivate then ACC_PRIVATE else ACC_PUBLIC
+      val mv = cv.visitMethod(visibility, func.funName.stringId, desc, null, null)
       addFunction(modOrPkg.name, func, mv, ctx)
       if (func.isMain) {
         val staticMv = cv.visitMethod(ACC_PUBLIC | ACC_STATIC, "main", desc, null, null)

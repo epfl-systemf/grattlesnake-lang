@@ -184,7 +184,8 @@ object Asts {
   /**
    * Function definition
    */
-  final case class FunDef(funName: FunOrVarId, params: List[Param], optRetType: Option[TypeTree], body: Block, isMain: Boolean) extends Ast {
+  final case class FunDef(funName: FunOrVarId, params: List[Param], optRetType: Option[TypeTree], body: Block,
+                          visibility: Visibility, isMain: Boolean) extends Ast {
     private val signatureMemo = new Memo[FunctionSignature]
     
     export signatureMemo.setOpt as setSignatureOpt

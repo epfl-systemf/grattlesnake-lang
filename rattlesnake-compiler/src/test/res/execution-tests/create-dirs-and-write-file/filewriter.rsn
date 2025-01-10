@@ -8,7 +8,7 @@ module FileWriter(path: FilePath, package FilePaths, device fs){
         fs.close(file);
     }
 
-    fn createParenthDirs() -> Bool {
+    private fn createParenthDirs() -> Bool {
         val path = me.path;
         if path is NonRootPath {
             val parent = path.parent;

@@ -110,7 +110,7 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
       argsTypesB.addOne(paramNameOpt, computeType(tpe, idsAreFields = false))
     }
     val retType = funDef.optRetType.map(computeType(_, idsAreFields = false)).getOrElse(VoidType)
-    FunctionSignature(funDef.funName, argsTypesB.result(), retType, languageMode)
+    FunctionSignature(funDef.funName, argsTypesB.result(), retType, funDef.visibility, languageMode)
   }
 
   private def computeType(typeTree: TypeTree, idsAreFields: Boolean): Type = typeTree match {

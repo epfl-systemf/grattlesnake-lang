@@ -4,7 +4,7 @@ import compiler.irs.Asts.*
 import compiler.pipeline.CompilerStep
 import lang.Keyword.*
 import lang.LanguageMode.OcapDisabled
-import lang.{Keyword, Operator}
+import lang.{Keyword, Operator, Visibility}
 
 final class PrettyPrinter(indentGranularity: Int = 2, displayAllParentheses: Boolean = false) extends CompilerStep[Ast, String] {
 
@@ -76,7 +76,12 @@ final class PrettyPrinter(indentGranularity: Int = 2, displayAllParentheses: Boo
           .newLine()
           .add("}")
 
-      case FunDef(funName, args, optRetTypeTree, body, isMain) =>
+      case FunDef(funName, args, optRetTypeTree, body, visibility, isMain) =>
+        if (visibility.isPrivate){
+          pps
+            .add(Keyword.Private.str)
+            .addSpace()
+        }
         if (isMain){
           pps
             .add(Main.str)

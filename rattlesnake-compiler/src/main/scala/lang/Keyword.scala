@@ -24,6 +24,7 @@ enum Keyword(val str: String) {
   case Nocap extends Keyword("nocap")
   case Package extends Keyword("package")
   case Panic extends Keyword("panic")
+  case Private extends Keyword("private")
   case Restricted extends Keyword("restricted")
   case Return extends Keyword("return")
   case Struct extends Keyword("struct")

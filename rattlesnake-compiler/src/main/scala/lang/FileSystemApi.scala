@@ -17,18 +17,14 @@ object FileSystemApi extends Device.DeviceApi {
 
 
   override def functions: Map[FunOrVarId, FunctionSignature] = Map(
-    FunctionSignature(openR, List(None -> StringType), IntType, OcapEnabled).keyed,
-    FunctionSignature(openW, List(None -> StringType), IntType, OcapEnabled).keyed,
-    FunctionSignature(openA, List(None -> StringType), IntType, OcapEnabled).keyed,
-    FunctionSignature(write, List(None -> IntType, None -> StringType), VoidType, OcapEnabled).keyed,
-    FunctionSignature(read, List(None -> IntType), IntType, OcapEnabled).keyed,
-    FunctionSignature(close, List(None -> IntType), VoidType, OcapEnabled).keyed,
-    FunctionSignature(createDir, List(None -> StringType), BoolType, OcapEnabled).keyed,
-    FunctionSignature(delete, List(None -> StringType), BoolType, OcapEnabled).keyed
+    sig(openR, List(None -> StringType), IntType),
+    sig(openW, List(None -> StringType), IntType),
+    sig(openA, List(None -> StringType), IntType),
+    sig(write, List(None -> IntType, None -> StringType), VoidType),
+    sig(read, List(None -> IntType), IntType),
+    sig(close, List(None -> IntType), VoidType),
+    sig(createDir, List(None -> StringType), BoolType),
+    sig(delete, List(None -> StringType), BoolType)
   )
-
-  extension (sig: FunctionSignature) private def keyed: (FunOrVarId, FunctionSignature) = {
-    sig.name -> sig
-  }
   
 }

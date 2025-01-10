@@ -10,12 +10,8 @@ object ConsoleApi extends Device.DeviceApi {
   val readLine: FunOrVarId = NormalFunOrVarId("readLine")
 
   override def functions: Map[FunOrVarId, FunctionSignature] = Map(
-    FunctionSignature(print, List(None -> StringType), VoidType, OcapEnabled).keyed,
-    FunctionSignature(readLine, List.empty, StringType, OcapEnabled).keyed
+    sig(print, List(None -> StringType), VoidType),
+    sig(readLine, List.empty, StringType)
   )
-
-  extension (sig: FunctionSignature) private def keyed: (FunOrVarId, FunctionSignature) = {
-    sig.name -> sig
-  }
   
 }

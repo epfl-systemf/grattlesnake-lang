@@ -6,6 +6,7 @@ import lang.CaptureDescriptors.{CaptureDescriptor, CaptureSet, Mark}
 import lang.LanguageMode.{OcapDisabled, OcapEnabled}
 import lang.Types.PrimitiveTypeShape.{RegionType, VoidType}
 import lang.Types.{NamedTypeShape, PrimitiveTypeShape, Type}
+import lang.Visibility.Public
 
 import scala.collection.mutable
 
@@ -13,6 +14,7 @@ final case class FunctionSignature(
                                     name: FunOrVarId,
                                     args: List[(Option[FunOrVarId], Type)],
                                     retType: Type,
+                                    visibility: Visibility,
                                     languageMode: LanguageMode
                                   ) {
 
@@ -47,7 +49,8 @@ sealed trait ConstructibleSig extends TypeSignature {
   def globalCaptures: Set[Capturable]
 
   def voidInitMethodSig: FunctionSignature =
-    FunctionSignature(ConstructorFunId, regularParams.toList.map((id, info) => (Some(id), info.tpe)), VoidType, languageMode)
+    FunctionSignature(ConstructorFunId, regularParams.toList.map((id, info) => (Some(id), info.tpe)), VoidType,
+      Public, languageMode)
 }
 
 sealed trait UserConstructibleSig extends TypeSignature {
