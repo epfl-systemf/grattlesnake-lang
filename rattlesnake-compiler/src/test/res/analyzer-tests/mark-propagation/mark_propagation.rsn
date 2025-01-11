@@ -6,7 +6,7 @@ package Test {
         val f: Foo^#;
         enclosed {} {
             f = FooCreator.createFoo();
-            abc(f.xs);      //> E : expected 'arr Bar', found 'arr^# Bar'
+            abc(f.xs);      //> E : expected 'arr Bar', found 'arr^# Bar^#'
             bar(f.xs[0]);   //> E : expected 'Bar', found 'Bar^#'
         };
     }

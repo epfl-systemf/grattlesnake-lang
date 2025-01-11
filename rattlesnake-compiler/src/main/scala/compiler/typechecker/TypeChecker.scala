@@ -723,7 +723,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
           }
         } else if (operator == Sharp) {
           featureIsNotAllowedIfOcapDisabled("marking operator", unaryOp.getPosition)
-          operandType.markedIfNeeded
+          operandType.shape ^ Mark
         } else {
           unaryOperatorSignatureFor(operator, operandType.shape) match {
             case Some(sig) => sig.retType
