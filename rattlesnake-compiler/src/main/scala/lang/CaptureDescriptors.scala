@@ -36,6 +36,7 @@ object CaptureDescriptors {
   final case class CaptureSet(set: Set[Capturable]) extends CaptureDescriptor {
     override def coversRoot: Boolean = set.contains(RootCapability)
 
+    def augmentedWith(c: Capturable): CaptureSet = CaptureSet(set + c)
     def union(that: CaptureSet): CaptureSet = CaptureSet(this.set ++ that.set)
 
     override def isEmpty: Boolean = set.isEmpty

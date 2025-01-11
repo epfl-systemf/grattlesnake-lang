@@ -23,8 +23,6 @@ final case class TypeCheckingContext private(
                                               meTypeId: TypeIdentifier,
                                               meCaptureDescr: CaptureDescriptor,
                                               currentFunIdOpt: Option[FunOrVarId],
-                                              private val importedPackages: Set[TypeIdentifier],
-                                              private val importedDevices: Set[Device],
                                               insideRegionsScope: Boolean,
                                               insideEnclosure: Boolean,
                                               currentRestriction: CaptureSet
@@ -143,12 +141,6 @@ final case class TypeCheckingContext private(
     }
   }
 
-  def isImported(pkg: TypeIdentifier): Boolean = {
-    pkg == meTypeId || importedPackages.contains(pkg)
-  }
-
-  def isImported(device: Device): Boolean = importedDevices.contains(device)
-
   def isCurrentFunc(owner: TypeIdentifier, funId: FunOrVarId): Boolean = {
     owner == meTypeId && currentFunIdOpt.contains(funId)
   }
@@ -188,14 +180,12 @@ object TypeCheckingContext {
              meTypeId: TypeIdentifier,
              meCaptureDescr: CaptureDescriptor,
              currFunIdOpt: Option[FunOrVarId],
-             allowedPackages: Set[TypeIdentifier],
-             allowedDevices: Set[Device],
              insideRegionsScope: Boolean,
              insideEnclosure: Boolean,
              currentRestriction: CaptureSet
            ): TypeCheckingContext = {
     new TypeCheckingContext(analysisContext, mutable.Map.empty, meTypeId,
-      meCaptureDescr, currFunIdOpt, allowedPackages, allowedDevices, insideRegionsScope,
+      meCaptureDescr, currFunIdOpt, insideRegionsScope,
       insideEnclosure, currentRestriction)
   }
 

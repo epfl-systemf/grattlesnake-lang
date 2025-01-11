@@ -2,11 +2,11 @@
 module Checked(#package Unchecked, #package Abc) {
 
     fn foo() {
-        Unchecked.doDangerousThings();  //> E : Unchecked is not allowed in the current environment
+        Unchecked.doDangerousThings();  //> E : cannot invoke function doDangerousThings, as its receiver is marked and the invocation occurs outside of an enclosure
     }
 
     fn getUnchecked() -> Unchecked {
-        return Unchecked;               //> E : Unchecked is not allowed in the current environment <//> E : returned value: expected 'Unchecked', found 'Unchecked^#'
+        return Unchecked;               //> E : returned value: expected 'Unchecked', found 'Unchecked^#'
     }
 
     fn bar() -> Bar {
@@ -14,7 +14,7 @@ module Checked(#package Unchecked, #package Abc) {
     }
 
     fn abc() -> Abc {
-        restricted {Abc} {              //> E : Abc is not allowed in the current environment
+        restricted {Abc} {
             return Abc;                 //> E : returned value: expected 'Abc', found 'Abc^#'
         }
     }

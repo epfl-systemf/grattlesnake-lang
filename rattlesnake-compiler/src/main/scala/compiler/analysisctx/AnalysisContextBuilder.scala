@@ -268,8 +268,6 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
               meTypeId = structId,
               meCaptureDescr = structSig.getNonSubstitutedCaptureDescr,
               currFunIdOpt = None,
-              allowedPackages = builtCtx.packages.keySet,
-              allowedDevices = Device.values.toSet,
               insideRegionsScope = false,
               insideEnclosure = false,
               currentRestriction = CaptureSet.singletonOfRoot
