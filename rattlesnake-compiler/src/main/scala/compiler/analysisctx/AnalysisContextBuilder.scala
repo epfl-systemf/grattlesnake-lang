@@ -47,7 +47,10 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
     val packageName = packageDef.packageName
     if (checkTypeNotAlreadyDefined(packageName, packageDef.getPosition)) {
       val functions = extractFunctions(packageDef)
-      val (implicitlyImportedPackages, implicitlyImportedDevices) = trackPackagesAndDevices(packageDef)
+      val (implicitlyImportedPackages, implicitlyImportedDevices) =
+        if langMode.isOcapEnabled
+        then trackPackagesAndDevices(packageDef)
+        else (mutable.LinkedHashSet.empty[TypeIdentifier], mutable.LinkedHashSet.empty[Device])
       val sig = PackageSignature(packageName, implicitlyImportedPackages, implicitlyImportedDevices, functions, langMode)
       packages.put(packageName, (sig, packageDef.getPosition))
     }
