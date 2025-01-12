@@ -684,7 +684,6 @@ final class TypeChecker(errorReporter: ErrorReporter)
         }
 
       case binOp@BinaryOp(lhs, operator, rhs) =>
-        // no check for unused mut because no binary operator requires mutability on its arguments
         val lhsTypeShape = checkExpr(lhs).shape
         val smartCasts = if operator == Operator.And then detectSmartCasts(lhs, tcCtx) else Map.empty
         val rhsTypeShape = checkExpr(rhs)(using tcCtx.copyWithSmartCasts(smartCasts)).shape
