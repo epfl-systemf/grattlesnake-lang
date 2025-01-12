@@ -1,7 +1,5 @@
 package identifiers
 
-import lang.Keyword
-
 sealed trait Identifier {
 
   def stringId: String

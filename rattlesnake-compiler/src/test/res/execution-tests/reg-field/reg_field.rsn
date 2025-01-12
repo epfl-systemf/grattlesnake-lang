@@ -3,19 +3,14 @@ package Main {
 
     main fn test(arr String){
         withreg r {
-            val a = arr@r Int[10];
-            val fooStruct: Foo^{a.reg} = new@a.reg Foo(42);
-            console.print((a.reg == fooStruct.reg) as String);
-            console.print(" - ");
-            foo(fooStruct);
+            val foo = new@r Foo(42);
+            val bar = new@r Bar(foo);
+            doSomething(foo, bar);
         }
     }
 
-    fn foo(f1: Foo^){
-        withreg r {
-            val f2 = new@r Foo(84);
-            console.print((f2.reg == f1.reg) as String);
-        }
+    fn doSomething(f: Foo^, b: Bar^){
+        console.print((f.i == b.f.i) as String);
     }
 
 }

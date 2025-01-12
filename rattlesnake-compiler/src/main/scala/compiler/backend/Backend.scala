@@ -656,8 +656,7 @@ final class Backend[V <: ClassVisitor](
       }
 
       case Select(lhs, SpecialFields.regFieldId) =>
-        generateCode(lhs, ctx)
-        RuntimeMethod.RegionOf.generateCall(mv)
+        shouldNotHappen()
 
       case Select(lhs, selected) =>
         generateCode(lhs, ctx)

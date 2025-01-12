@@ -9,6 +9,7 @@ import compiler.pipeline.CompilerStep
 import compiler.reporting.Errors.{Err, ErrorReporter, Warning}
 import compiler.reporting.Position
 import compiler.typechecker.CapturablesConverter.convertToCapturable
+import compiler.typechecker.ExprPosition.{Captured, Executable}
 import compiler.typechecker.ShapeAnnotPosition.{InTypeTest, InsideCapturingType, OutsideCapturingType}
 import compiler.typechecker.SubcaptureRelation.isCoveredBy
 import compiler.typechecker.SubtypeRelation.subtypeOf
@@ -335,6 +336,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
                                (using tcCtx: TypeCheckingContext, envir: Environment, langMode: LanguageMode): CaptureDescriptor = {
     val captureDescr = captureDescrTree match {
       case explicitCaptureSetTree: ExplicitCaptureSetTree =>
+        given ExprPosition = Captured
         checkCaptureSet(explicitCaptureSetTree, idsAreFields)
       case ImplicitRootCaptureSetTree() => CaptureSet.singletonOfRoot
       case MarkTree() => Mark
@@ -344,7 +346,8 @@ final class TypeChecker(errorReporter: ErrorReporter)
   }
 
   private def checkCaptureSet(explicitCaptureSetTree: ExplicitCaptureSetTree, idsAreFields: Boolean)
-                             (using tcCtx: TypeCheckingContext, envir: Environment, langMode: LanguageMode): CaptureSet = {
+                             (using tcCtx: TypeCheckingContext, envir: Environment,
+                              langMode: LanguageMode, exprPosition: ExprPosition): CaptureSet = {
     CaptureSet(explicitCaptureSetTree.capturedExpressions.flatMap { expr =>
       val exprType = checkExpr(expr)
       if exprType.isPure then None
@@ -502,12 +505,14 @@ final class TypeChecker(errorReporter: ErrorReporter)
 
     case restr@RestrictedStat(captureSetTree, body) =>
       featureIsNotAllowedIfOcapDisabled("restricted", restr.getPosition)
+      given ExprPosition = Captured
       val captureSet = checkCaptureSet(captureSetTree, idsAreFields = false)
       val innerCtx = tcCtx.copyWithRestriction(captureSet)
       checkStat(body)(using innerCtx, Environment(captureSet, allowEverything = false))
 
     case encl@EnclosedStat(captureSetTree, body) =>
       featureIsNotAllowedIfOcapDisabled("enclosures", encl.getPosition)
+      given ExprPosition = Executable
       val captureSet = checkCaptureSet(captureSetTree, idsAreFields = false)
       for (capability <- captureSetTree.capturedExpressions) {
         val isRegion = capability.getTypeShape == RegionType
@@ -538,7 +543,8 @@ final class TypeChecker(errorReporter: ErrorReporter)
     case _: StringLit => StringType
   }
 
-  private def checkExpr(expr: Expr)(using tcCtx: TypeCheckingContext, envir: Environment, ambientLangMode: LanguageMode): Type = {
+  private def checkExpr(expr: Expr)(using tcCtx: TypeCheckingContext, envir: Environment,
+                                    ambientLangMode: LanguageMode, exprPos: ExprPosition = Executable): Type = {
     val rawType = expr match {
 
       case literal: Literal =>
@@ -694,19 +700,16 @@ final class TypeChecker(errorReporter: ErrorReporter)
         }
 
       case select@Select(lhs, selected) =>
+        if (selected == SpecialFields.regFieldId && exprPos == Executable){
+          reportError(s"${SpecialFields.regFieldId} field can only be used inside a capturing type, it cannot appear in executable position", select.getPosition)
+        }
         val lhsEnvir =
           // if select corresponds to a path, check restrictions only on it, not on its prefixes
           if convertToCapturable(select, erOpt = None, idsAreFields = false).isDefined
           then envir.withEverythingAllowed
           else envir
         val lhsType = checkExpr(lhs)(using tcCtx, lhsEnvir)
-        val selectType = lhsType.shape match {
-          case ArrayTypeShape(elemType) if selected == SpecialFields.regFieldId =>
-            RegionType ^ CaptureSet.singletonOfRoot
-          case _ =>
-            checkFieldAccess(lhs, selected, select.getPosition, mustUpdateField = false)
-        }
-        selectType
+        checkFieldAccess(lhs, selected, select.getPosition, mustUpdateField = false)
 
       case ternary@Ternary(cond, thenBr, elseBr) =>
         val condType = checkExpr(cond)
