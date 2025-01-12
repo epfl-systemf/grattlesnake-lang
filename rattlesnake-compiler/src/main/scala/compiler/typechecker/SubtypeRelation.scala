@@ -12,11 +12,11 @@ import scala.collection.mutable
 
 object SubtypeRelation {
 
-  extension (l: Type) def subtypeOf(r: Type)(using tcCtx: TypeCheckingContext, langMode: LanguageMode): Boolean = {
-    l.shape.subtypeOf(r.shape) && (langMode == OcapDisabled || l.captureDescriptor.subcaptureOf(r.captureDescriptor))
+  extension (l: Type) def subtypeOf(r: Type)(using tcCtx: TypeCheckingContext): Boolean = {
+    l.shape.subtypeOf(r.shape) && l.captureDescriptor.subcaptureOf(r.captureDescriptor)
   }
 
-  extension (subT: TypeShape) def subtypeOf(superT: TypeShape)(using TypeCheckingContext, LanguageMode): Boolean = {
+  extension (subT: TypeShape) def subtypeOf(superT: TypeShape)(using TypeCheckingContext): Boolean = {
     (subT, superT) match {
       case _ if subT == superT => true
       case (NothingType | UndefinedTypeShape, _) => true

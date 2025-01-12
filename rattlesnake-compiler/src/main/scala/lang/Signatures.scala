@@ -16,14 +16,7 @@ final case class FunctionSignature(
                                     retType: Type,
                                     visibility: Visibility,
                                     languageMode: LanguageMode
-                                  ) {
-
-  def argsForMode(requestedMode: LanguageMode): List[(Option[FunOrVarId], Type)] =
-    args.map((idOpt, tpe) => (idOpt, convertType(languageMode, requestedMode, tpe)))
-
-  def retTypeForMode(requestedMode: LanguageMode): Type =
-    convertType(languageMode, requestedMode, convertType(languageMode, requestedMode, retType))
-}
+                                  )
 
 sealed trait TypeSignature {
   def id: TypeIdentifier
@@ -142,12 +135,4 @@ final case class StructSignature(
   override def globalCaptures: Set[ConcreteCapturable] = Set.empty
 }
 
-final case class FieldInfo(tpe: Type, isReassignable: Boolean, languageMode: LanguageMode) {
-  def tpeForMode(requestedMode: LanguageMode): Type = convertType(languageMode, requestedMode, tpe)
-}
-
-private def convertType(fromMode: LanguageMode, toMode: LanguageMode, tpe: Type): Type = (fromMode, toMode) match {
-  case (OcapEnabled, OcapDisabled) => tpe.cdErasedDeep
-  case (OcapDisabled, OcapEnabled) => tpe.markedIfNeededDeep
-  case _ => tpe
-}
+final case class FieldInfo(tpe: Type, isReassignable: Boolean, languageMode: LanguageMode)

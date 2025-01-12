@@ -100,7 +100,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
       }
       for (param@Param(paramNameOpt, typeTree, isReassignable) <- fields) {
         val tpe = checkType(typeTree, idsAreFields = true)(using tcCtx, Environment.root, langMode)
-        if (isReassignable){
+        if (isReassignable) {
           forbidRootCapture(tpe, "reassignable field", param.getPosition)
         }
         paramNameOpt.foreach { paramName =>
@@ -236,14 +236,14 @@ final class TypeChecker(errorReporter: ErrorReporter)
         reportError("package import in non-ocap module", pkgImp.getPosition)
       }
     case devImp@DeviceImport(device) =>
-      if (langMode.isOcapDisabled){
+      if (langMode.isOcapDisabled) {
         reportError("device import in non-ocap module", devImp.getPosition)
       }
   }
 
   private def checkType(typeTree: TypeTree, idsAreFields: Boolean)
                        (using tcCtx: TypeCheckingContext, envir: Environment, langMode: LanguageMode): Type = {
-    typeTree match {
+    val rawType = typeTree match {
       case capTypeTree@CapturingTypeTree(typeShapeTree, captureDescrTree) =>
         featureIsNotAllowedIfOcapDisabled("capturing types", capTypeTree.getPosition)
 
@@ -261,6 +261,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         checkTypeShape(typeShapeTree, idsAreFields)
       case WrapperTypeTree(tpe) => tpe
     }
+    rawType.maybeMarked(langMode)
   }
 
   private def warnOnNonCapAndRedundantCaptures(captureDescrTree: CaptureDescrTree)
@@ -425,18 +426,18 @@ final class TypeChecker(errorReporter: ErrorReporter)
         case varRef@VariableRef(name) =>
           tcCtx.varIsAssigned(name)
           val inPlaceModifiedType = typeOfLocalOrConst(name, tcCtx, varModif.getPosition)
-          val operatorRetType = mustExistOperator(inPlaceModifiedType, op, rhsType, varModif.getPosition)
+          val operatorRetType = mustExistOperator(inPlaceModifiedType.shape, op, rhsType.shape, varModif.getPosition)
           checkSubtypingConstraint(inPlaceModifiedType, operatorRetType, varModif.getPosition, "")
           varRef.setType(inPlaceModifiedType)
         case indexing@Indexing(indexed, _) =>
           checkExpr(indexing)
           val inPlaceModifiedElemType = exprMustBeIndexable(indexed.getType, tcCtx, varModif.getPosition, allowString = false)
-          val operatorRetType = mustExistOperator(inPlaceModifiedElemType, op, rhsType, varModif.getPosition)
+          val operatorRetType = mustExistOperator(inPlaceModifiedElemType.shape, op, rhsType.shape, varModif.getPosition)
           checkSubtypingConstraint(inPlaceModifiedElemType, operatorRetType, varModif.getPosition, "")
         case select@Select(structExpr, selected) =>
           val structType = checkExpr(structExpr)
           val inPlaceModifiedFieldType = checkFieldAccess(structExpr, selected, varModif.getPosition, mustUpdateField = true)
-          val operatorRetType = mustExistOperator(inPlaceModifiedFieldType, op, rhsType, varModif.getPosition)
+          val operatorRetType = mustExistOperator(inPlaceModifiedFieldType.shape, op, rhsType.shape, varModif.getPosition)
           checkSubtypingConstraint(inPlaceModifiedFieldType, operatorRetType, varModif.getPosition, "")
           select.setType(inPlaceModifiedFieldType)
         case _ =>
@@ -445,7 +446,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
 
     case ifThenElse@IfThenElse(cond, thenBr, elseBrOpt) =>
       val condType = checkExpr(cond)
-      checkSubtypingConstraint(BoolType, condType, ifThenElse.getPosition, "if condition")
+      checkSubtypingConstraint(BoolType, condType.shape, ifThenElse.getPosition, "if condition")
       val smartCasts = detectSmartCasts(cond, tcCtx)
       ifThenElse.setSmartCasts(smartCasts)
       checkStat(thenBr)(using tcCtx.copyWithSmartCasts(smartCasts))
@@ -453,7 +454,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
 
     case whileLoop@WhileLoop(cond, body) =>
       val condType = checkExpr(cond)
-      checkSubtypingConstraint(BoolType, condType, whileLoop.getPosition, "while condition")
+      checkSubtypingConstraint(BoolType, condType.shape, whileLoop.getPosition, "while condition")
       val smartCasts = detectSmartCasts(cond, tcCtx)
       checkStat(body)(using tcCtx.copyWithSmartCasts(smartCasts))
 
@@ -461,7 +462,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
       val newCtx = tcCtx.copyForSubScope
       initStats.foreach(checkStat(_)(using newCtx))
       val condType = checkExpr(cond)(using newCtx)
-      checkSubtypingConstraint(BoolType, condType, forLoop.getPosition, "for loop condition")
+      checkSubtypingConstraint(BoolType, condType.shape, forLoop.getPosition, "for loop condition")
       val smartCasts = detectSmartCasts(cond, tcCtx)
       val smartCastsAwareCtx = newCtx.copyWithSmartCasts(smartCasts)
       stepStats.foreach(checkStat(_)(using smartCastsAwareCtx))
@@ -538,7 +539,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
   }
 
   private def checkExpr(expr: Expr)(using tcCtx: TypeCheckingContext, envir: Environment, ambientLangMode: LanguageMode): Type = {
-    val tpe = shapeOnlyIfOcapDisabled(expr match {
+    val rawType = expr match {
 
       case literal: Literal =>
         checkLiteralExpr(literal)
@@ -579,16 +580,16 @@ final class TypeChecker(errorReporter: ErrorReporter)
       case indexing@Indexing(indexed, arg) =>
         val indexedType = checkExpr(indexed)
         val argType = checkExpr(arg)
-        checkSubtypingConstraint(IntType, argType, indexing.getPosition, "array index")
+        checkSubtypingConstraint(IntType, argType.shape, indexing.getPosition, "array index")
         val elemType = exprMustBeIndexable(indexed.getType, tcCtx, indexed.getPosition, allowString = true)
-        elemType.propagateMarkOf(indexedType)
+        elemType
 
       case arrayInit@ArrayInit(regionOpt, elemTypeTree, size) =>
         if (elemTypeTree == VoidType || elemTypeTree == NothingType) {
           reportError(s"array cannot have element type $elemTypeTree", arrayInit.getPosition)
         }
         val sizeType = checkExpr(size)
-        checkSubtypingConstraint(IntType, sizeType, size.getPosition, "array size")
+        checkSubtypingConstraint(IntType, sizeType.shape, size.getPosition, "array size")
         size match {
           case IntLit(value) if value < 0 =>
             reportError("array size should be nonnegative", size.getPosition)
@@ -639,7 +640,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
             checkCallArgs(moduleSig, moduleSig.voidInitMethodSig, receiverOpt = None, regionOpt = None, args,
               isInstantiation = true, instantiation.getPosition)
             if (ambientLangMode.isOcapEnabled) {
-              if (moduleSig.languageMode.isOcapDisabled && !tcCtx.insideEnclosure){
+              if (moduleSig.languageMode.isOcapDisabled && !tcCtx.insideEnclosure) {
                 reportError("cannot instantiate a non-ocap module outside of an enclosure", instantiation.getPosition)
               }
               for imp <- moduleSig.globalCaptures do {
@@ -667,29 +668,29 @@ final class TypeChecker(errorReporter: ErrorReporter)
           }
         } else if (operator == Sharp) {
           featureIsNotAllowedIfOcapDisabled("marking operator", unaryOp.getPosition)
-          operandType.shape ^ Mark
+          operandTypeShape ^ Mark
         } else {
-          unaryOperatorSignatureFor(operator, operandType.shape) match {
+          unaryOperatorSignatureFor(operator, operandTypeShape) match {
             case Some(sig) => sig.retType
             case None =>
-              reportError(s"no definition of operator '$operator' found for operand '$operandType'", unaryOp.getPosition)
+              reportError(s"no definition of operator '$operator' found for operand '$operandTypeShape'", unaryOp.getPosition)
           }
         }
 
       case binOp@BinaryOp(lhs, operator, rhs) =>
         // no check for unused mut because no binary operator requires mutability on its arguments
-        val lhsType = checkExpr(lhs)
+        val lhsTypeShape = checkExpr(lhs).shape
         val smartCasts = if operator == Operator.And then detectSmartCasts(lhs, tcCtx) else Map.empty
-        val rhsType = checkExpr(rhs)(using tcCtx.copyWithSmartCasts(smartCasts))
+        val rhsTypeShape = checkExpr(rhs)(using tcCtx.copyWithSmartCasts(smartCasts)).shape
         binOp.setSmartCasts(smartCasts)
         if (operator == Equality || operator == Inequality) {
-          val isSubOrSupertype = lhsType.subtypeOf(rhsType) || rhsType.subtypeOf(lhsType)
+          val isSubOrSupertype = lhsTypeShape.subtypeOf(rhsTypeShape) || rhsTypeShape.subtypeOf(lhsTypeShape)
           if (!isSubOrSupertype) {
-            reportError(s"cannot compare '$lhsType' and '$rhsType' using ${Equality.str} or ${Inequality.str}", binOp.getPosition)
+            reportError(s"cannot compare '$lhsTypeShape' and '$rhsTypeShape' using ${Equality.str} or ${Inequality.str}", binOp.getPosition)
           }
           BoolType
         } else {
-          mustExistOperator(lhsType, operator, rhsType, binOp.getPosition)
+          mustExistOperator(lhsTypeShape, operator, rhsTypeShape, binOp.getPosition)
         }
 
       case select@Select(lhs, selected) =>
@@ -705,11 +706,11 @@ final class TypeChecker(errorReporter: ErrorReporter)
           case _ =>
             checkFieldAccess(lhs, selected, select.getPosition, mustUpdateField = false)
         }
-        selectType.propagateMarkOf(lhs.getType)
+        selectType
 
       case ternary@Ternary(cond, thenBr, elseBr) =>
         val condType = checkExpr(cond)
-        checkSubtypingConstraint(BoolType, condType, ternary.getPosition, "ternary operator condition")
+        checkSubtypingConstraint(BoolType, condType.shape, ternary.getPosition, "ternary operator condition")
         val smartCasts = detectSmartCasts(cond, tcCtx)
         ternary.setSmartCasts(smartCasts)
         val thenType = checkExpr(thenBr)(using tcCtx.copyWithSmartCasts(smartCasts))
@@ -727,36 +728,35 @@ final class TypeChecker(errorReporter: ErrorReporter)
 
         given ShapeAnnotPosition = InTypeTest
 
-        val targetType = checkCastTargetTypeShape(typeTree)
-        val castTypeShape = if (exprType.shape.subtypeOf(targetType)) {
-          reportError(s"useless conversion: '${exprType.shape}' --> '$targetType'", cast.getPosition, isWarning = true)
+        val srcShape = exprType.shape
+        val targetShape = checkCastTargetTypeShape(typeTree)
+        if (srcShape.subtypeOf(targetShape)) {
+          reportError(s"useless conversion: '$srcShape' --> '$targetShape'", cast.getPosition, isWarning = true)
           cast.markTransparent()
-          targetType
-        } else if (TypeConversion.conversionFor(exprType.shape, targetType).isDefined) {
-          targetType
-        } else {
-          structCastResult(exprType.shape, targetType, tcCtx).getOrElse {
-            reportError(s"cannot cast '${expr.getType}' to '$targetType'", cast.getPosition)
-          }
+        } else if (TypeConversion.conversionFor(srcShape, targetShape).isEmpty
+          && !canPerformNominalCast(srcShape, targetShape, cast.getPosition)) {
+          reportError(s"cannot cast '$srcShape' to '$targetShape'", cast.getPosition)
         }
-        castTypeShape ^ exprType.captureDescriptor
+        targetShape ^ exprType.captureDescriptor
 
       case typeTest@TypeTest(expr, typeTree) =>
         val exprType = checkExpr(expr)
 
         given ShapeAnnotPosition = InTypeTest
 
-        val targetType = checkCastTargetTypeShape(typeTree)
-        if (exprType.shape.subtypeOf(targetType)) {
-          reportError(s"test will always be true, as '${exprType.shape}' is a subtype of '$targetType'",
+        val srcShape = exprType.shape
+        val targetShape = checkCastTargetTypeShape(typeTree)
+        if (srcShape.subtypeOf(targetShape)) {
+          reportError(s"test will always be true, as '$srcShape' is a subtype of '$targetShape'",
             typeTest.getPosition, isWarning = true)
-        } else if (structCastResult(exprType.shape, targetType, tcCtx).isEmpty) {
-          reportError(s"cannot check expression of type '${exprType.shape}' against type '$targetType'", typeTest.getPosition)
+        } else if (!canPerformNominalCast(srcShape, targetShape, typeTest.getPosition)) {
+          reportError(s"cannot check expression of type '$srcShape' against type '$targetShape'", typeTest.getPosition)
         }
         BoolType
 
       case _: Sequence => throw AssertionError("should not happen, as Sequences are produced by the desugaring phase")
-    })
+    }
+    val tpe = rawType.maybeMarked(ambientLangMode)
     expr.setType(tpe)
     if (ambientLangMode.isOcapEnabled) {
       convertToCapturable(expr, erOpt = None, idsAreFields = false).foreach { exprAsCap =>
@@ -805,12 +805,12 @@ final class TypeChecker(errorReporter: ErrorReporter)
     val funName = call.function
     val args = call.args
     val posOpt = call.getPosition
-    if (ownerCd == Mark && !tcCtx.insideEnclosure) {
+    if (langMode.isOcapEnabled && ownerCd == Mark && !tcCtx.insideEnclosure) {
       reportError(s"cannot invoke function $funName, as its receiver is marked and the invocation occurs outside of an enclosure", posOpt)
     }
     tcCtx.resolveFunc(owner, funName) match {
       case FunctionFound(ownerSig, funSig) =>
-        if (funSig.visibility.isPrivate && owner != tcCtx.meTypeId){
+        if (funSig.visibility.isPrivate && owner != tcCtx.meTypeId) {
           reportError(s"function $funName is private in $owner", call.getPosition)
         }
         if (isTailrec && !tcCtx.isCurrentFunc(ownerSig.id, funName)) {
@@ -829,13 +829,12 @@ final class TypeChecker(errorReporter: ErrorReporter)
     }
   }
 
-  private def structCastResult(srcType: TypeShape, destType: TypeShape, ctx: TypeCheckingContext)
-                              (using TypeCheckingContext, LanguageMode): Option[NamedTypeShape] = {
-    (srcType, destType) match {
-      case (srcType: NamedTypeShape, destType: NamedTypeShape)
-        if destType.subtypeOf(srcType) || srcType.subtypeOf(destType)
-      => Some(destType)
-      case _ => None
+  private def canPerformNominalCast(srcShape: TypeShape, destShape: TypeShape, posOpt: Option[Position])
+                                   (using TypeCheckingContext): Boolean = {
+    (srcShape, destShape) match {
+      case (srcType: NamedTypeShape, destType: NamedTypeShape) =>
+        destType.subtypeOf(srcType) || srcType.subtypeOf(destType)
+      case _ => false
     }
   }
 
@@ -848,7 +847,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
                              isInstantiation: Boolean,
                              callPos: Option[Position]
                            )(using callerCtx: TypeCheckingContext, envir: Environment, callerLangMode: LanguageMode): Type = {
-    val expTypesIter = funSig.argsForMode(callerLangMode).iterator
+    val expTypesIter = funSig.args.iterator
     val argsIter = args.iterator
     val calleeCtx = TypeCheckingContext(
       callerCtx.analysisContext,
@@ -882,10 +881,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
       val arg = argsIter.next()
       val expTypeSubst = substitutor.subst(expTypeRaw, arg.getPosition)
       val actType = checkExpr(arg)
-      if (!actType.subtypeOf(expTypeSubst)) {
-        reportError(s"expected '$expTypeSubst', found '$actType'", arg.getPosition)
-        errorFound = true
-      }
+      errorFound |= !checkSubtypingConstraint(expTypeSubst, actType, arg.getPosition, "")
       paramNameOpt.foreach { paramName =>
         calleeCtx.addLocal(paramName, expTypeSubst, defPos = None, isReassignable = false,
           declHasTypeAnnot = true, () => (), () => ())
@@ -908,7 +904,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
     for arg <- argsIter do {
       checkExpr(arg)
     }
-    substitutor.subst(funSig.retTypeForMode(callerLangMode), callPos)
+    substitutor.subst(funSig.retType, callPos)
   }
 
   private def computeCaptures(args: List[Expr], regionOpt: Option[Expr], sig: ConstructibleSig)
@@ -959,12 +955,12 @@ final class TypeChecker(errorReporter: ErrorReporter)
         reportError(s"expected $expectedDescr, found '$exprType'", posOpt)
   }
 
-  private def mustExistOperator(lhsType: Type, operator: Operator, rhsType: Type, position: Option[Position])
+  private def mustExistOperator(lhsTypeShape: TypeShape, operator: Operator, rhsTypeShape: TypeShape, position: Option[Position])
                                (using TypeCheckingContext, LanguageMode): Type = {
-    binaryOperatorSigFor(lhsType.shape, operator, rhsType.shape) match {
+    binaryOperatorSigFor(lhsTypeShape, operator, rhsTypeShape) match {
       case Some(sig) => sig.retType
       case None =>
-        reportError(s"no definition of operator '$operator' found for operands '$lhsType' and '$rhsType'", position)
+        reportError(s"no definition of operator '$operator' found for operands '$lhsTypeShape' and '$rhsTypeShape'", position)
     }
   }
 
@@ -1029,11 +1025,23 @@ final class TypeChecker(errorReporter: ErrorReporter)
                                         actual: Type,
                                         posOpt: Option[Position],
                                         msgPrefix: String
-                                      )(using ctx: TypeCheckingContext, langMode: LanguageMode): Unit = {
-    if (expected != UndefinedTypeShape && actual != UndefinedTypeShape && !actual.subtypeOf(expected)) {
+                                      )(using ctx: TypeCheckingContext, langMode: LanguageMode): Boolean = {
+
+    def reportWithPrefix(expected: Type, actual: Type): Unit = {
       val fullprefix = if msgPrefix == "" then "" else (msgPrefix ++ ": ")
       reportError(fullprefix ++ s"expected '$expected', found '$actual'", posOpt)
     }
+
+    if (expected.shape != UndefinedTypeShape && actual.shape != UndefinedTypeShape) {
+      if (langMode.isOcapDisabled && !actual.shape.subtypeOf(expected.shape)) {
+        // in nocap mode, display only shapes if marks are not necessary to understand the error
+        reportWithPrefix(expected.shape, actual.shape)
+        false
+      } else if (!actual.subtypeOf(expected)) {
+        reportWithPrefix(expected, actual)
+        false
+      } else true
+    } else true
   }
 
   private def computeJoinOf(types: Set[Type], ctx: TypeCheckingContext)(using LanguageMode): Option[Type] = {
@@ -1085,10 +1093,6 @@ final class TypeChecker(errorReporter: ErrorReporter)
     } getOrElse {
       expr.getType.captureDescriptor
     }
-  }
-
-  private def shapeOnlyIfOcapDisabled(tpe: Type)(using langMode: LanguageMode): Type = {
-    if langMode.isOcapEnabled then tpe else tpe.shape
   }
 
   private def featureIsNotAllowedIfOcapDisabled(featureDescr: String, posOpt: Option[Position])(using langMode: LanguageMode): Unit = {

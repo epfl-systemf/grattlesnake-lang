@@ -117,26 +117,32 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
     FunctionSignature(funDef.funName, argsTypesB.result(), retType, funDef.visibility, languageMode)
   }
 
-  private def computeType(typeTree: TypeTree, idsAreFields: Boolean): Type = typeTree match {
-    case CapturingTypeTree(typeShapeTree, captureDescr) =>
-      CapturingType(computeTypeShape(typeShapeTree, idsAreFields), computeCaptureDescr(captureDescr, idsAreFields))
-    case typeShapeTree: TypeShapeTree =>
-      computeTypeShape(typeShapeTree, idsAreFields)
-    case WrapperTypeTree(tpe) => tpe
+  private def computeType(typeTree: TypeTree, idsAreFields: Boolean)(using langMode: LanguageMode): Type = {
+    val rawtype = typeTree match {
+      case CapturingTypeTree(typeShapeTree, captureDescr) =>
+        CapturingType(computeTypeShape(typeShapeTree, idsAreFields), computeCaptureDescr(captureDescr, idsAreFields))
+      case typeShapeTree: TypeShapeTree =>
+        computeTypeShape(typeShapeTree, idsAreFields)
+      case WrapperTypeTree(tpe) => tpe
+    }
+    rawtype.maybeMarked(langMode)
   }
 
-  private def computeTypeShape(typeShapeTree: TypeShapeTree, idsAreFields: Boolean): TypeShape = typeShapeTree match {
+  private def computeTypeShape(typeShapeTree: TypeShapeTree, idsAreFields: Boolean)
+                              (using langMode: LanguageMode): TypeShape = typeShapeTree match {
     case ArrayTypeShapeTree(elemType) => ArrayTypeShape(computeType(elemType, idsAreFields))
     case castTargetTypeShapeTree: CastTargetTypeShapeTree => computeCastTargetTypeShape(castTargetTypeShapeTree)
   }
 
-  private def computeCastTargetTypeShape(castTargetTypeShapeTree: CastTargetTypeShapeTree): CastTargetTypeShape = {
+  private def computeCastTargetTypeShape(castTargetTypeShapeTree: CastTargetTypeShapeTree)
+                                        (using langMode: LanguageMode): CastTargetTypeShape = {
     castTargetTypeShapeTree match
       case PrimitiveTypeShapeTree(primitiveType) => primitiveType
       case NamedTypeShapeTree(name) => NamedTypeShape(name)
   }
 
-  private def computeCaptureDescr(cdTree: CaptureDescrTree, idsAreFields: Boolean): CaptureDescriptor = cdTree match {
+  private def computeCaptureDescr(cdTree: CaptureDescrTree, idsAreFields: Boolean)
+                                 (using langMode: LanguageMode): CaptureDescriptor = cdTree match {
     case ExplicitCaptureSetTree(capturedExpressions) =>
       // checks that the expression is indeed capturable are delayed to the type-checker
       CaptureSet(capturedExpressions.flatMap(mkCapturableOrFailSilently(_, idsAreFields)).toSet)
@@ -283,7 +289,7 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
                       s"supertype '$directSupertypeId'", structDefPosOpt)
                   } else if (
                     !subFieldInfo.isReassignable
-                      && !subFieldInfo.tpe.subtypeOf(superFldInfo.tpe)(using tcCtx, OcapEnabled)
+                      && !subFieldInfo.tpe.subtypeOf(superFldInfo.tpe)(using tcCtx)
                   ) {
                     reportError(s"type '${subFieldInfo.tpe}' of field '$fldName' does not conform to its type " +
                       s"'${superFldInfo.tpe}' in its supertype '$directSupertypeId'", structDefPosOpt)

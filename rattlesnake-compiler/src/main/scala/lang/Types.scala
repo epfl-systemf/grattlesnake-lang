@@ -11,22 +11,17 @@ object Types {
   sealed trait Type {
     def shape: TypeShape
     def captureDescriptor: CaptureDescriptor
+
+    def maybeMarked(languageMode: LanguageMode): Type = {
+      if languageMode.isOcapDisabled && this.shape.mayCapture then this.shape ^ Mark
+      else this
+    }
     
     def isPure: Boolean = captureDescriptor.isEmpty
-
-    def markedIfNeededDeep: Type
-    def cdErasedDeep: TypeShape
-
-    def propagateMarkOf(maybeMarked: Type): Type = {
-      if maybeMarked.captureDescriptor == Mark then this.markedIfNeededDeep else this
-    }
   }
 
   final case class CapturingType private[CapturingType](shape: TypeShape, captureDescriptor: CaptureDescriptor) extends Type {
     require(!captureDescriptor.isEmpty)
-
-    override def markedIfNeededDeep: Type = shape.markedIfNeededDeep
-    override def cdErasedDeep: TypeShape = shape.cdErasedDeep
 
     override def toString: String =
       if captureDescriptor.isEmpty then shape.toString
@@ -36,7 +31,9 @@ object Types {
   
   object CapturingType {
     def apply(shape: Types.TypeShape, descriptor: CaptureDescriptor): Type = {
-      if descriptor.isEmpty then shape else new CapturingType(shape, descriptor)
+      if descriptor.isEmpty || (descriptor == Mark && !shape.mayCapture)
+      then shape
+      else new CapturingType(shape, descriptor)
     }
   }
 
@@ -63,13 +60,6 @@ object Types {
     case VoidType extends PrimitiveTypeShape("Void", false)
     case NothingType extends PrimitiveTypeShape("Nothing", false)
 
-    override def markedIfNeededDeep: Type = this match {
-      case RegionType => RegionType ^ Mark
-      case _ => this
-    }
-    
-    override def cdErasedDeep: TypeShape = this
-
     override def toString: String = str
   }
 
@@ -80,9 +70,6 @@ object Types {
   final case class NamedTypeShape(typeName: TypeIdentifier) extends CastTargetTypeShape {
     override def mayCapture: Boolean = true
 
-    override def markedIfNeededDeep: Type = this ^ Mark
-    override def cdErasedDeep: TypeShape = this
-
     override def toString: String = typeName.stringId
   }
 
@@ -92,9 +79,6 @@ object Types {
    */
   final case class ArrayTypeShape(elemType: Type) extends TypeShape {
     override def mayCapture: Boolean = true
-
-    override def markedIfNeededDeep: Type = ArrayTypeShape(elemType.markedIfNeededDeep) ^ Mark
-    override def cdErasedDeep: TypeShape = ArrayTypeShape(elemType.cdErasedDeep)
 
     override def toString: String = {
       s"${Keyword.Arr.str} $elemType"
@@ -107,9 +91,6 @@ object Types {
   final case class UnionTypeShape(unitedTypes: Set[TypeShape]) extends TypeShape {
     override def mayCapture: Boolean = unitedTypes.exists(_.mayCapture)
 
-    override def markedIfNeededDeep: Type = if mayCapture then this ^ Mark else this
-    override def cdErasedDeep: TypeShape = UnionTypeShape(unitedTypes.map(_.cdErasedDeep))
-
     override def toString: String = unitedTypes.toSeq.sortBy(_.toString).mkString(" | ")
   }
 
@@ -118,9 +99,6 @@ object Types {
    */
   case object UndefinedTypeShape extends TypeShape {
     override def mayCapture: Boolean = false
-
-    override def markedIfNeededDeep: Type = this
-    override def cdErasedDeep: TypeShape = this
 
     override def toString: String = "[undefined type]"
   }
