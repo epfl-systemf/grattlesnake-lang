@@ -1,8 +1,8 @@
 
 package Test {
 
-    fn createArray() -> arr Double {
-        return [f(10.0), 14.31, -2.1, 11.0+9.4, -5.0*28.0, 94.35*32.21]
+    fn createArray() -> arr^ Double {
+        return [f(10.0), 14.31, -2.1, 11.0+9.4, -5.0*28.0, 94.35*32.21]@newreg
     }
 
     fn f(x: Double) -> Double {
@@ -10,7 +10,7 @@ package Test {
         return y * y
     }
 
-    fn printArray(xs: arr Double){
+    fn printArray(xs: arr^ Double){
         for var i = 0; i < len xs; i += 1 {
             console.print(xs[i] as String + " ");
         }

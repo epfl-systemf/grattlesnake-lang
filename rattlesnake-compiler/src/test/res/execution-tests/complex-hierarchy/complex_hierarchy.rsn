@@ -85,10 +85,10 @@ package Test {
         Cells.setRightmost(t, 27);
         t.left = new@t.r Fork(t.r, new@t.r Leaf(x), (new@t.r SimpleCell(75)).value, t.left);
         val array = Cells.toArray(t, s);
-        testArray([42*42, 75, -1, 8, 9, 42, 27], array);
+        testArray([42*42, 75, -1, 8, 9, 42, 27]@newreg, array);
     }
 
-    fn testArray(expected: arr Int, actual: arr^ Int){
+    fn testArray(expected: arr^ Int, actual: arr^ Int){
         if len actual != len expected {
             panic "length mismatch"
         };

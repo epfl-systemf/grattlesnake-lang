@@ -4,7 +4,7 @@ const failure: String = "K.O.";
 
 package Test {
 
-    fn testFunc(xarr: arr Int) -> String {
+    fn testFunc(xarr: arr^ Int) -> String {
         var x = xarr[0];
         x += neg;
         x -= (neg/(-neg2));
@@ -16,10 +16,11 @@ package Test {
     }
     
     main fn test(arr String){
-        console.print(testFunc([41]) + "\n");
-        console.print(testFunc([807]) + "\n");
-        console.print(testFunc([553]) + "\n");
-        console.print(testFunc([552]) + "\n");
+        val r = newreg;
+        console.print(testFunc([41]@r) + "\n");
+        console.print(testFunc([807]@r) + "\n");
+        console.print(testFunc([553]@r) + "\n");
+        console.print(testFunc([552]@r) + "\n");
     }
 
 }

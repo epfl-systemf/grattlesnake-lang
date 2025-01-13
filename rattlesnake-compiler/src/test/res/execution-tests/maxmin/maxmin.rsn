@@ -1,7 +1,7 @@
 
 package Test {
 
-    fn testFunc(xs: arr Double, action: String) -> Double {
+    fn testFunc(xs: arr^ Double, action: String) -> Double {
         return
         when action == "min" then Arrays.arrayMin(xs)
         else when action == "max" then Arrays.arrayMax(xs)
@@ -9,10 +9,11 @@ package Test {
     }
 
     main fn test(arr String){
-        val array1 = [12.7, 9.47, 11.2, 15.8, 19.8];
+        val r = newreg;
+        val array1 = [12.7, 9.47, 11.2, 15.8, 19.8]@r;
         printD(testFunc(array1, "max"));
         printD(testFunc(array1, "min"));
-        val array2 = [74.82, -71.68, -11.45, 15.21, 9.999, -9.999];
+        val array2 = [74.82, -71.68, -11.45, 15.21, 9.999, -9.999]@r;
         printD(testFunc(array2, "max"));
         printD(testFunc(array2, "min"));
     }
@@ -33,7 +34,7 @@ package Error {
 
 package Arrays {
 
-    fn arrayMax(xs: arr Double) -> Double {
+    fn arrayMax(xs: arr^ Double) -> Double {
         if len xs == 0 {
             panic "max of empty array"
         };
@@ -44,7 +45,7 @@ package Arrays {
         return when len xs == 0 then Error.error("") else max
     }
 
-    fn arrayMin(xs: arr Double) -> Double {
+    fn arrayMin(xs: arr^ Double) -> Double {
         if len xs == 0 {
             panic "min of empty array"
         };

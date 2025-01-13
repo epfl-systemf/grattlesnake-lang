@@ -12,7 +12,7 @@ package Test {
         return when a == 0 then b else a
     }
     
-    fn wrapper(inputs: arr Int) -> Int {
+    fn wrapper(inputs: arr^ Int) -> Int {
         if len inputs != 2 {
             panic "unexpected array length"
         };
@@ -20,9 +20,11 @@ package Test {
     }
 
     main fn test(arr String){
-        printI(wrapper([120, 72]));
-        printI(wrapper([15, 95]));
-        printI(wrapper([99, 27]));
+        val r = newreg;
+        val s = newreg;
+        printI(wrapper([120, 72]@s));
+        printI(wrapper([15, 95]@r));
+        printI(wrapper([99, 27]@s));
     }
 
     fn printI(i: Int){

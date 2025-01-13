@@ -3,7 +3,7 @@ package Main {
 
     main fn main_(arr String){
 
-        val writer = FileWriters.mkWriter(["path", "to", "the", "file.txt"]);
+        val writer = FileWriters.mkWriter(["path", "to", "the", "file.txt"]@newreg);
         writer.write("Cobra\n");
         writer.write("Python\n");
         writer.write("Rattlesnake\n");

@@ -593,15 +593,14 @@ final class TypeChecker(errorReporter: ErrorReporter)
           case _ => ()
         }
         val elemType = checkType(elemTypeTree, idsAreFields = false)
-        requireAndCheckRegionIffOcapEnabled(regionOpt, arrayInit.getPosition, isMutableObj = true)
+        requireAndCheckRegionIffOcapEnabled(regionOpt, arrayInit.getPosition)
         ArrayTypeShape(elemType) ^ regionOpt.map(minimalCaptureSetFor)
 
       case filledArrayInit@FilledArrayInit(Nil, regionOpt) =>
         reportError("cannot infer type of empty array, use 'arr <type>[0]' instead", filledArrayInit.getPosition)
 
       case filledArrayInit@FilledArrayInit(arrayElems, regionOpt) =>
-        val isMutableArray = regionOpt.isDefined || ambientLangMode.isOcapDisabled
-        requireAndCheckRegionIffOcapEnabled(regionOpt, filledArrayInit.getPosition, isMutableArray)
+        requireAndCheckRegionIffOcapEnabled(regionOpt, filledArrayInit.getPosition)
         val types = arrayElems.map(checkExpr)
         computeJoinOf(types.toSet, tcCtx) match {
           case Some(elemsJoin) =>
@@ -761,14 +760,13 @@ final class TypeChecker(errorReporter: ErrorReporter)
     tpe
   }
 
-  private def requireAndCheckRegionIffOcapEnabled(regionOpt: Option[Expr], posOpt: Option[Position], isMutableObj: Boolean)
+  private def requireAndCheckRegionIffOcapEnabled(regionOpt: Option[Expr], posOpt: Option[Position])
                                                  (using ctx: TypeCheckingContext, envir: Environment, langMode: LanguageMode): Unit = {
     regionOpt.foreach(checkExpr)
     (regionOpt, langMode) match {
       case (None, OcapDisabled) => ()
-      case (None, OcapEnabled) if isMutableObj =>
+      case (None, OcapEnabled) =>
         reportError("expected a region", posOpt)
-      case (None, OcapEnabled) => ()
       case (Some(_), OcapDisabled) =>
         reportError("unexpected region, as ocap is disabled for this file", posOpt)
       case (Some(region), OcapEnabled) =>

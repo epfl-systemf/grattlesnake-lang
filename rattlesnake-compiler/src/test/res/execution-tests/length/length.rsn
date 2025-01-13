@@ -7,7 +7,7 @@ package Test {
         val u = newreg;
         printI(len "Hello");
         printI(len bonjour);
-        printI(len [10, 15, 50]);
+        printI(len [10, 15, 50]@u);
         printI(len (arr@u Double [8]));
     }
 
