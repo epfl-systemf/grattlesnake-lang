@@ -214,7 +214,7 @@ object Main {
       } else if (mainClasses.size >= 2){
         error("found more than one main class")
       }
-      val process = new Runner(error, outDirBasePath).runMain(mainClasses.head, inheritIO = true)
+      val process = new Runner(error, outDirBasePath).runMain(mainClasses.head, inheritIO = true, programArgs)
       val exitCode = process.waitFor()
       if (exitCode != 0) {
         System.err.println(s"Process terminated with error code $exitCode")

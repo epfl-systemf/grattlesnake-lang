@@ -75,7 +75,7 @@ class ExecutionTests(programDirName: String) {
     }
     
     assert(mainClasses.size == 1)
-    val process = Runner(errorCallback, testOutSubdirPath).runMain(mainClasses.head, inheritIO = false)
+    val process = Runner(errorCallback, testOutSubdirPath).runMain(mainClasses.head, inheritIO = false, Array.empty)
 
     val exitCode = process.waitFor()
     val actOut = readProgramStream(process.getInputStream)

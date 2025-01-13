@@ -14,7 +14,7 @@ final class Runner(errorCallback: String => Nothing, workingDirectoryPath: Path)
     then ";"
     else ":"
 
-  def runMain(mainClassName: TypeIdentifier, inheritIO: Boolean): Process = {
+  def runMain(mainClassName: TypeIdentifier, inheritIO: Boolean, programArgs: Array[String]): Process = {
     val outDirPath = workingDirectoryPath.resolve(outDirName)
     val agentSubdirPath = outDirPath.resolve(agentSubdirName)
     val agentJarName = findNameOfJarInDir(agentSubdirPath.toFile, "rattlesnake-agent",
@@ -26,10 +26,10 @@ final class Runner(errorCallback: String => Nothing, workingDirectoryPath: Path)
     val processBuilder = new ProcessBuilder()
       .directory(workingDirectoryPath.toFile)
       .command(
-        "java",
+        (Array("java",
         "-cp", s"$runtimeJarFullPath$classPathsSep./$outDirName",
         s"-javaagent:$agentJarFullPath",
-        mainClassName.stringId
+        mainClassName.stringId) ++ programArgs)*
       )
     if (inheritIO) {
       processBuilder.inheritIO()
