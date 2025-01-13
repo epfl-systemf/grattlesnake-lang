@@ -994,9 +994,6 @@ final class TypeChecker(errorReporter: ErrorReporter)
             }
             performSubstIfApplicable(fieldType, structSig)
           case Some(modSig: ModuleSignature) if modSig.paramImports.contains(fieldName) =>
-            if (!receiver.isInstanceOf[MeRef]) {
-              reportError(s"references to module imports are only allowed when using the '${Keyword.Me}' keyword", posOpt)
-            }
             if (mustUpdateField) {
               reportError("cannot update module field", posOpt)
             }
