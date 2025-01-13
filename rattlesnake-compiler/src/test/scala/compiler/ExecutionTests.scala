@@ -183,7 +183,7 @@ class ExecutionTests(programDirName: String) {
           (nameFromPath(actualFileName), None)
         case Array(actualFileName, lineIdxStr) =>
           (nameFromPath(actualFileName), Some(lineIdxStr.toInt))
-        case _ => assert(false)
+        case _ => assert(false, "Failed to extract entries from the following stacktrace: \n" + lines.mkString("\n"))
       }
     }
   }

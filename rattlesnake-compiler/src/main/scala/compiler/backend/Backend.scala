@@ -490,7 +490,7 @@ final class Backend[V <: ClassVisitor](
 
       case Call(None, funName, args, isTailrec) => shouldNotHappen()
 
-      case Call(Some(receiver), funName, args, isTailrec) => {
+      case call@Call(Some(receiver), funName, args, isTailrec) => {
         generateCode(receiver, ctx)
         for arg <- args do {
           generateCode(arg, ctx)
@@ -500,6 +500,10 @@ final class Backend[V <: ClassVisitor](
         val receiverTypeName = receiverShape.asInstanceOf[NamedTypeShape].typeName
         val funDescr = descriptorForFunc(ctx.resolveFunc(receiverTypeName, funName).getFunSigOrThrow())
         mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, recvInternalName, funName.stringId, funDescr, false)
+        if (call.getSignatureOpt.get.retType == NothingType) {
+          mv.visitInsn(Opcodes.ACONST_NULL)
+          mv.visitInsn(Opcodes.ATHROW)
+        }
       }
 
       case Indexing(indexed, arg) if indexed.getTypeShape == StringType =>
