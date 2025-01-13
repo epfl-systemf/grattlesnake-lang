@@ -658,7 +658,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         val operandType = checkExpr(operand)
         val operandTypeShape = operandType.shape
         if (operator == Len) {
-          if (operandTypeShape.isInstanceOf[ArrayTypeShape] || operandTypeShape == StringType) {
+          if (operandTypeShape.isInstanceOf[ArrayTypeShape] || operandTypeShape.subtypeOf(StringType)) {
             IntType
           } else {
             reportError(s"length operator can only be applied to arrays and strings, found '$operandType'", unaryOp.getPosition)
