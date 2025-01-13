@@ -240,8 +240,7 @@ object TreeParsers {
                              suffixDescr: => String, firstSuffix: AnyTreeParser[?]): Option[T] = {
           val pos = ll1Iterator.current.position
           val res = original.extract(ll1Iterator, suffixAdmits, suffixDescr, firstSuffix).map(f)
-          // if is an AST, set position unless it is already set
-          res.filter(_.isInstanceOf[Ast]).map(_.asInstanceOf[Ast]).filter(_.getPosition.isEmpty).foreach(_.setPosition(pos))
+          setPositionIfAst(res, pos)
           res
         }
         export original.firstExpectedDescr
@@ -293,8 +292,7 @@ object TreeParsers {
         override def extract(ll1Iterator: LL1Iterator): Option[T] = {
           val pos = ll1Iterator.current.position
           val res = original.extract(ll1Iterator).map(f)
-          // if is an AST, set position unless it is already set
-          res.filter(_.isInstanceOf[Ast]).map(_.asInstanceOf[Ast]).filter(_.getPosition.isEmpty).foreach(_.setPosition(pos))
+          setPositionIfAst(res, pos)
           res
         }
         export original.firstExpectedDescr
@@ -576,6 +574,21 @@ object TreeParsers {
       remaining.take(nKeep)
     }${if remaining.size > nKeep then "..." else ""}\n" +
       s"Option 1 ($name1) expected: $opt1\n" + s"Option 2 ($name2) expected: $opt2")
+  }
+
+  private def setPositionIfAst(optObj: Option[Any], pos: Position, maxPropagationDepth: Int = 2): Unit = {
+    if (maxPropagationDepth >= 0){
+      optObj match {
+        case Some(ast: Ast) =>
+          if (ast.getPosition.isEmpty) {
+            ast.setPosition(pos)
+          }
+          for child <- ast.children do {
+            setPositionIfAst(Some(child), ast.getPosition.get, maxPropagationDepth - 1)
+          }
+        case _ => ()
+      }
+    }
   }
 
   private inline def pfToDescr(inline pf: PartialFunction[?, ?]): String = {
