@@ -53,7 +53,11 @@ public final class MethodTransformer extends MethodVisitor {
             case Opcodes.FASTORE -> Type.FLOAT_TYPE;
             case Opcodes.DASTORE -> Type.DOUBLE_TYPE;
             case Opcodes.AASTORE -> Type.getType(Object.class);
-            case Opcodes.BASTORE -> Type.BYTE_TYPE;
+
+            // Rattlesnake has no support for the byte type, so BASTORE necessarily operates on an array of booleans.
+            // This will need to be changed in case we need to support interoperability with other languages.
+            case Opcodes.BASTORE -> Type.BOOLEAN_TYPE;
+
             case Opcodes.CASTORE -> Type.CHAR_TYPE;
             case Opcodes.SASTORE -> Type.SHORT_TYPE;
             default -> throw new AssertionError("unexpected opcode: " + storeInsnOpcode);

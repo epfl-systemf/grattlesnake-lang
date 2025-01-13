@@ -1,0 +1,14 @@
+#nocap;
+
+package Unsafe {
+
+    fn allTrue(bools: arr Bool) -> Bool {
+        for var i = 0; i < len bools; i += 1 {
+            if !bools[i]{
+                return false;
+            }
+        };
+        return true;
+    }
+
+}

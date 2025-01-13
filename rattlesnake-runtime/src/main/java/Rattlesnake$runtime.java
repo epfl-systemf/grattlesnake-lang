@@ -115,7 +115,7 @@ public final class Rattlesnake$runtime {
         array[idx] = value;
     }
 
-    public static void monitoredArrayStore(byte[] array, int idx, byte value) {
+    public static void monitoredArrayStore(boolean[] array, int idx, boolean value) {
         assertRegionAllowed(array);
         array[idx] = value;
     }

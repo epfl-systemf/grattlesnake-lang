@@ -1,0 +1,12 @@
+
+package Test {
+
+    main fn run(arr String){
+        val r = newreg;
+        val booleans = [true, true, false, true, true]@r;
+        enclosed {console} {
+            console.print(Unsafe.allTrue(#booleans) as String)
+        }
+    }
+
+}
