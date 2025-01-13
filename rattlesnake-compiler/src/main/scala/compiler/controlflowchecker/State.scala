@@ -8,10 +8,11 @@ import compiler.reporting.Position
 import identifiers.{FunOrVarId, TypeIdentifier}
 import lang.Types.NamedTypeShape
 
+
 final case class State(
                         alwaysTerminated: Boolean,
                         locals: Map[FunOrVarId, InitializationStatus],
-                        possibleTypesOfVals: Map[FunOrVarId, Set[TypeIdentifier]]
+                        alreadyCoveredTypesOfVals: Map[FunOrVarId, Set[TypeIdentifier]]
                       ) {
 
   def checkIsInitialized(varRef: VariableRef, er: ErrorReporter): Unit = {
@@ -56,22 +57,21 @@ final case class State(
   }
 
   def handledCaseSaved(valId: FunOrVarId, tpe: TypeIdentifier): State = {
-    copy(possibleTypesOfVals = possibleTypesOfVals.updatedWith(valId) {
+    copy(alreadyCoveredTypesOfVals = alreadyCoveredTypesOfVals.updatedWith(valId) {
       case None => Some(Set(tpe))
       case Some(old) => Some(old + tpe)
     })
   }
-  
+
   def isUnfeasible(ctx: ControlFlowCheckingContext): Boolean = {
-    val iter = possibleTypesOfVals.iterator
-    while (iter.hasNext){
+    val iter = alreadyCoveredTypesOfVals.iterator
+    while (iter.hasNext) {
       val (valId, coveredTypes) = iter.next()
       ctx.typeOf(valId).shape match {
-        case NamedTypeShape(totalTypeId) if !ctx.isReassignable(valId) =>
-          if (ctx.analysisContext.datatypeIsCovered(totalTypeId, coveredTypes)){
-            return true
-          }
-        case _ => ()  // expected to never happen
+        case NamedTypeShape(totalTypeId)
+          if !ctx.isReassignable(valId) && ctx.analysisContext.datatypeIsCovered(totalTypeId, coveredTypes) =>
+          return true
+        case _ => ()
       }
     }
     false
@@ -79,17 +79,23 @@ final case class State(
 
   def joined(that: State): State = State(
     this.alwaysTerminated && that.alwaysTerminated,
+    if this.alwaysTerminated then that.locals
+    else if that.alwaysTerminated then this.locals
+    else mergeLocals(that),
+    if this.alwaysTerminated then that.alreadyCoveredTypesOfVals
+    else if that.alwaysTerminated then this.alreadyCoveredTypesOfVals
+    // The most precise thing would be to combine the already covered types (T is covered if it is covered in both sides).
+    // This is not done here for simplicity, hence an empty map is returned.
+    else Map.empty
+  )
+
+  private def mergeLocals(that: State) = {
     (for (localId <- (this.locals.keys ++ that.locals.keys))
       yield localId -> joined(
         this.locals.get(localId),
         that.locals.get(localId)
-      )).toMap,
-    (for (valId <- (this.possibleTypesOfVals.keySet ++ that.possibleTypesOfVals.keySet))
-      yield valId -> (
-        this.possibleTypesOfVals.get(valId).toSet.flatten ++
-          that.possibleTypesOfVals.get(valId).toSet.flatten
-        )).toMap
-  )
+      )).toMap
+  }
 
   private def joined(lStatusOpt: Option[InitializationStatus], rStatusOpt: Option[InitializationStatus]): InitializationStatus = {
     (lStatusOpt, rStatusOpt) match {

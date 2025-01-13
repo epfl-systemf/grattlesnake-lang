@@ -28,7 +28,7 @@ final class ControlFlowCheckingContext private(
   def unknownVarsRemoved(state: State): State = State(
     state.alwaysTerminated,
     state.locals.filter((id, _) => localsAndConsts.contains(id)),
-    state.possibleTypesOfVals.filter((id, _) => localsAndConsts.contains(id))
+    state.alreadyCoveredTypesOfVals.filter((id, _) => localsAndConsts.contains(id))
   )
 
 }
