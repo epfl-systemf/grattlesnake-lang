@@ -20,6 +20,7 @@ enum Keyword(val str: String) {
   case Module extends Keyword("module")
   case Mut extends Keyword("mut")
   case New extends Keyword("new")
+  case NewReg extends Keyword("newreg")
   case Nocap extends Keyword("nocap")
   case Package extends Keyword("package")
   case Panic extends Keyword("panic")
@@ -32,7 +33,6 @@ enum Keyword(val str: String) {
   case Var extends Keyword("var")
   case When extends Keyword("when")
   case While extends Keyword("while")
-  case WithReg extends Keyword("withreg")
 
   override def toString: String = str
 }

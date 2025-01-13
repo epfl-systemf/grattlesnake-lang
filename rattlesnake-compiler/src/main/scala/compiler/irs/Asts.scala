@@ -289,8 +289,14 @@ object Asts {
     override def getTypeOpt: Option[TypeShape] = Some(StringType)
   }
 
+  final case class RegionCreation() extends Expr {
+    override def children: List[Ast] = Nil
+
+    override def getTypeOpt: Option[Type] = Some(RegionType ^ CaptureSet.singletonOfRoot)
+  }
+
   /**
-   * Occurence of a variable (`val`, `var`, function parameter, etc.)
+   * Occurrence of a variable (`val`, `var`, function parameter, etc.)
    */
   final case class VariableRef(name: FunOrVarId) extends Expr {
     override def children: List[Ast] = Nil
@@ -493,10 +499,6 @@ object Asts {
    */
   final case class PanicStat(msg: Expr) extends Statement {
     override def children: List[Ast] = List(msg)
-  }
-  
-  final case class RegionsStat(declRegions: List[FunOrVarId], body: Statement) extends Statement {
-    override def children: List[Ast] = List(body)
   }
   
   final case class RestrictedStat(captureSet: ExplicitCaptureSetTree, body: Block) extends Statement {

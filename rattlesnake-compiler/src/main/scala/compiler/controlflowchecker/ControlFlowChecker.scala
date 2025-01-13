@@ -106,15 +106,6 @@ final class ControlFlowChecker(er: ErrorReporter) extends CompilerStep[(List[Sou
         .terminated()
     case PanicStat(msg) =>
       analyzeExpr(inState, msg).terminated()
-    case RegionsStat(declRegions, body) =>
-      val innerCtx = ctx.copyForNarrowedScope()
-      var stateWithRegions = inState
-      for regId <- declRegions do {
-        innerCtx.saveLocal(regId, isReassignable = false, RegionType ^ CaptureSet.singletonOfRoot)
-        stateWithRegions = stateWithRegions.assignmentSaved(regId)
-      }
-      val endState = analyzeStat(stateWithRegions, body)(using innerCtx)
-      ctx.unknownVarsRemoved(endState)
     case RestrictedStat(ExplicitCaptureSetTree(capturedExpressions), body) =>
       val s = analyzeExpressions(inState, capturedExpressions)
       analyzeStat(s, body)
@@ -132,6 +123,7 @@ final class ControlFlowChecker(er: ErrorReporter) extends CompilerStep[(List[Sou
 
   private def analyzeExpr(inState: State, expr: Expr)(using ctx: ControlFlowCheckingContext): State = expr match {
     case literal: Literal => inState
+    case regionCreation: RegionCreation => inState
     case varRef: VariableRef =>
       inState.checkIsInitialized(varRef, er)
       inState

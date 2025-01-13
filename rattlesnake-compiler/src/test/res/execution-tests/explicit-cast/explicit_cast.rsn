@@ -15,16 +15,15 @@ package Test {
     }
 
     main fn testFunc(arr String) {
-        withreg r {
-            val a = me.create(r) as Sub;
-            var s = me.readY(a) + " ";  // s: "Hello "
-            val b: Super^{r} = a;
-            me.setX(r, b);
-            s += me.readY(b as Sub);    // s: "Hello Hello"
-            s += " ";                   // s: "Hello Hello "
-            s += a.x as String;         // s: "Hello Hello 42"
-            console.print(s);
-        }
+        val r = newreg;
+        val a = me.create(r) as Sub;
+        var s = me.readY(a) + " ";  // s: "Hello "
+        val b: Super^{r} = a;
+        me.setX(r, b);
+        s += me.readY(b as Sub);    // s: "Hello Hello"
+        s += " ";                   // s: "Hello Hello "
+        s += a.x as String;         // s: "Hello Hello 42"
+        console.print(s);
     }
 
     fn setX(r: Region^, s: Super^{r}){

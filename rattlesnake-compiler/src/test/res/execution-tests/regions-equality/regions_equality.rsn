@@ -2,12 +2,10 @@
 package Test {
 
     main fn testF(arr String) {
-        withreg r {
-            withreg s {
-                printB(r == s);        // false
-                printB(r == r);        // true
-            }
-        }
+        val r = newreg;
+        val s = newreg;
+        printB(r == s);        // false
+        printB(r == r);        // true
     }
 
     fn printB(b: Bool){

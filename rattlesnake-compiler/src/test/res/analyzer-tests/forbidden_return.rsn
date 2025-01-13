@@ -3,19 +3,13 @@ package P {
 
     fn foo(){
         enclosed {} {
-            return;         //> E : return statements are not allowed inside region scopes and enclosures
+            return;         //> E : return statements are not allowed inside enclosures
         }
     }
 
     fn bar(i: Int) -> Int {
         enclosed {} {
-            return i;       //> E : return statements are not allowed inside region scopes and enclosures
-        }
-    }
-
-    fn baz(){
-        withreg r {         //> W : unused local: 'r' is never queried
-            return;         //> E : return statements are not allowed inside region scopes and enclosures
+            return i;       //> E : return statements are not allowed inside enclosures
         }
     }
 

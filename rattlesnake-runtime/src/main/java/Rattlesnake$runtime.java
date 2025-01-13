@@ -132,30 +132,14 @@ public final class Rattlesnake$runtime {
 
     /// / REGIONS ////
 
-    private static int highestRegion = 0;
-    private static final IntArrayFIFOQueue freeRegions = new IntArrayFIFOQueue();
+    private static int lastRegion = 0;
 
-    public static int allocRegion() {
-        int reg;
-        if (freeRegions.isEmpty()){
-            reg = ++highestRegion;
-        } else {
-            reg = freeRegions.dequeueInt();
+    public static int newRegion() {
+        var r = ++lastRegion;
+        if (currentEnvir != null) {
+            currentEnvir.regions.add(r);
         }
-        if (currentEnvir != null){
-            currentEnvir.regions.add(reg);
-        }
-        return reg;
-    }
-
-    public static void deallocRegion(int reg){
-        freeRegions.enqueue(reg);
-    }
-
-    public static void assertNoMemoryLeak(){
-        if (freeRegions.size() != highestRegion){
-            throw new RuntimeException("program terminated successfully but some regions were not deallocated");
-        }
+        return r;
     }
 
 }

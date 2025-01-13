@@ -23,7 +23,6 @@ final case class TypeCheckingContext private(
                                               meTypeId: TypeIdentifier,
                                               meCaptureDescr: CaptureDescriptor,
                                               currentFunIdOpt: Option[FunOrVarId],
-                                              insideRegionsScope: Boolean,
                                               insideEnclosure: Boolean,
                                               currentRestriction: CaptureSet
                                             ) {
@@ -42,8 +41,6 @@ final case class TypeCheckingContext private(
       case (id, info) => id -> info.copy(tpe = smartCasts.getOrElse(id, info.tpe))
     })
   }
-  
-  def copyForRegionScope: TypeCheckingContext = copy(insideRegionsScope = true)
   
   def copyWithRestriction(restr: CaptureSet): TypeCheckingContext = copy(currentRestriction = restr)
   
@@ -142,8 +139,6 @@ final case class TypeCheckingContext private(
   def isCurrentFunc(owner: TypeIdentifier, funId: FunOrVarId): Boolean = {
     owner == meTypeId && currentFunIdOpt.contains(funId)
   }
-  
-  def returnIsPermitted: Boolean = !(insideRegionsScope || insideEnclosure)
 
   def localIsQueried(localId: FunOrVarId): Unit = {
     locals.get(localId).foreach { l =>
@@ -178,13 +173,11 @@ object TypeCheckingContext {
              meTypeId: TypeIdentifier,
              meCaptureDescr: CaptureDescriptor,
              currFunIdOpt: Option[FunOrVarId],
-             insideRegionsScope: Boolean,
              insideEnclosure: Boolean,
              currentRestriction: CaptureSet
            ): TypeCheckingContext = {
     new TypeCheckingContext(analysisContext, mutable.Map.empty, meTypeId,
-      meCaptureDescr, currFunIdOpt, insideRegionsScope,
-      insideEnclosure, currentRestriction)
+      meCaptureDescr, currFunIdOpt, insideEnclosure, currentRestriction)
   }
 
   final case class LocalInfo private(

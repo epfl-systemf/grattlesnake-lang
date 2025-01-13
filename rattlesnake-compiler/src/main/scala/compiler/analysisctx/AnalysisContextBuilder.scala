@@ -274,7 +274,6 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
               meTypeId = structId,
               meCaptureDescr = structSig.getNonSubstitutedCaptureDescr,
               currFunIdOpt = None,
-              insideRegionsScope = false,
               insideEnclosure = false,
               currentRestriction = CaptureSet.singletonOfRoot
             )

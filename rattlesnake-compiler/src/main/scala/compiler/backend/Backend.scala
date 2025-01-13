@@ -204,7 +204,6 @@ final class Backend[V <: ClassVisitor](
     if (retType != VoidType && retType != NothingType){
       mv.visitInsn(if TypesConverter.numSlotsFor(retType.shape) == 1 then Opcodes.POP else Opcodes.POP2)
     }
-    RuntimeMethod.AssertNoMemoryLeak.generateCall(mv)
     mv.visitInsn(Opcodes.RETURN)
     mv.visitMaxs(0, 0)
     mv.visitEnd()
@@ -445,6 +444,9 @@ final class Backend[V <: ClassVisitor](
       case CharLit(value) => mv.visitLdcInsn(value)
       case BoolLit(value) => mv.visitLdcInsn(if value then 1 else 0)
       case StringLit(value) => mv.visitLdcInsn(value)
+
+      case regionCreation: RegionCreation =>
+        RuntimeMethod.NewRegion.generateCall(mv)
 
       case varRef@VariableRef(name) => {
         ctx.getLocal(name) match
@@ -792,19 +794,6 @@ final class Backend[V <: ClassVisitor](
         mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/RuntimeException",
           ConstructorFunId.stringId, s"(L$stringTypeStr;)V", false)
         mv.visitInsn(Opcodes.ATHROW)
-
-      case RegionsStat(declRegions, body) =>
-        val innerCtx = ctx.withNewLocalsFrame
-        for regId <- declRegions do {
-          innerCtx.addLocal(regId, RegionType ^ CaptureSet.singletonOfRoot)
-          RuntimeMethod.AllocRegion.generateCall(mv)
-          mv.visitVarInsn(Opcodes.ISTORE, innerCtx.getLocal(regId).get._2)
-        }
-        generateCode(body, innerCtx)
-        for regId <- declRegions.reverse do {
-          mv.visitVarInsn(Opcodes.ILOAD, innerCtx.getLocal(regId).get._2)
-          RuntimeMethod.DeallocRegion.generateCall(mv)
-        }
 
       case RestrictedStat(capabilities, body) =>
         generateCode(body, ctx)

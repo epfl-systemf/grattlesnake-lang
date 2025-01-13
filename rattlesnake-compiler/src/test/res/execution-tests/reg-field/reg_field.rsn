@@ -2,11 +2,10 @@
 package Main {
 
     main fn test(arr String){
-        withreg r {
-            val foo = new@r Foo(42);
-            val bar = new@r Bar(foo);
-            doSomething(foo, bar);
-        }
+        val r = newreg;
+        val foo = new@r Foo(42);
+        val bar = new@r Bar(foo);
+        doSomething(foo, bar);
     }
 
     fn doSomething(f: Foo^, b: Bar^){

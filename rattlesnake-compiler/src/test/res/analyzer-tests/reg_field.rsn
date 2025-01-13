@@ -2,11 +2,11 @@
 package Main {
 
     main fn test(arr String){
-        withreg r, s {
-            val foo = new@r Foo(42);
-            val bar = new@s Bar(foo);   //> E : expected 'Foo^{s}', found 'Foo^{r}'
-            doSomething(foo, bar);
-        }
+        val r = newreg;
+        val s = newreg;
+        val foo = new@r Foo(42);
+        val bar = new@s Bar(foo);   //> E : expected 'Foo^{s}', found 'Foo^{r}'
+        doSomething(foo, bar);
     }
 
     fn doSomething(f: Foo^, b: Bar^) -> Region^ {

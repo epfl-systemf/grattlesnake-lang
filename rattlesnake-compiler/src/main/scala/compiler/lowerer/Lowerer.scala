@@ -160,6 +160,7 @@ final class Lowerer extends CompilerStep[(List[Source], AnalysisContext), (List[
   private def lower(expr: Expr): Expr = propagatePosition(expr.getPosition) {
     val lowered = expr match {
       case literal: Literal => literal
+      case regionCreation: RegionCreation => regionCreation
       case varRef: VariableRef => varRef
       case meRef: MeRef => meRef
       case packageRef: PackageRef => packageRef
@@ -275,7 +276,6 @@ final class Lowerer extends CompilerStep[(List[Source], AnalysisContext), (List[
       case forLoop: ForLoop => lower(forLoop)
       case returnStat: ReturnStat => lower(returnStat)
       case panicStat: PanicStat => lower(panicStat)
-      case regionsStat: RegionsStat => lower(regionsStat)
       case restrictedStat: RestrictedStat => lower(restrictedStat)
       case enclosedStat: EnclosedStat => lower(enclosedStat)
   }
@@ -286,10 +286,6 @@ final class Lowerer extends CompilerStep[(List[Source], AnalysisContext), (List[
       case packageDef: PackageDef => lower(packageDef)
       case structDef: StructDef => lower(structDef)
       case constDef: ConstDef => lower(constDef)
-  }
-  
-  private def lower(regionsStat: RegionsStat): RegionsStat = propagatePosition(regionsStat.getPosition) {
-    RegionsStat(regionsStat.declRegions, lower(regionsStat.body))
   }
   
   private def lower(restrictedStat: RestrictedStat): RestrictedStat = propagatePosition(restrictedStat.getPosition) {

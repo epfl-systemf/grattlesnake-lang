@@ -168,6 +168,9 @@ final class PrettyPrinter(indentGranularity: Int = 2, displayAllParentheses: Boo
           .addSpace()
           .add(device.keyword.str)
 
+      case RegionCreation() =>
+        pps.add(NewReg.str)
+
       case localDef@LocalDef(valName, optTypeTree, rhsOpt, isReassignable) =>
         pps
           .add(localDef.keyword.str)
@@ -408,20 +411,6 @@ final class PrettyPrinter(indentGranularity: Int = 2, displayAllParentheses: Boo
           .add(Panic.str)
           .addSpace()
         addAst(msg)
-
-      case RegionsStat(declRegions, body) =>
-        pps
-          .add(WithReg.str)
-          .addSpace()
-        val regIter = declRegions.iterator
-        while (regIter.hasNext){
-          pps.add(regIter.next())
-          if (regIter.hasNext){
-            pps.add(", ")
-          }
-        }
-        pps.addSpace()
-        addAst(body)
 
       case RestrictedStat(capSetTree, body) =>
         pps

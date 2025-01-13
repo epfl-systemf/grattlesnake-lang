@@ -14,11 +14,10 @@ package Test {
     }
 
     main fn m(arr String){
-        withreg reg {
-            val a = arr@reg Int[2];
-            func(a);
-            console.print(a[0] as String + "\n" + a[1] as String);
-        }
+        val reg = newreg;
+        val a = arr@reg Int[2];
+        func(a);
+        console.print(a[0] as String + "\n" + a[1] as String);
     }
 
 }

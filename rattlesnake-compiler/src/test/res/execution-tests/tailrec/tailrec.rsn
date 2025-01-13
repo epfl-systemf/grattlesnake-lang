@@ -5,10 +5,9 @@ package Main {
 
     fn testF() -> Int {
         val max: Int;
-        withreg r {
-            val array = generateArray(r);
-            max = max(array);
-        };
+        val r = newreg;
+        val array = generateArray(r);
+        max = max(array);
         return max;
     }
 

@@ -4,12 +4,11 @@ const bonjour = "Bonjour"
 package Test {
 
     main fn testFunc(arr String) {
-        withreg u {
-            printI(len "Hello");
-            printI(len bonjour);
-            printI(len [10, 15, 50]);
-            printI(len (arr@u Double [8]));
-        }
+        val u = newreg;
+        printI(len "Hello");
+        printI(len bonjour);
+        printI(len [10, 15, 50]);
+        printI(len (arr@u Double [8]));
     }
 
     fn printI(i: Int){

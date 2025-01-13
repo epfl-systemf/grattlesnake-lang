@@ -2,9 +2,8 @@
 package Test {
 
     main fn testFunc(arr String) {
-        withreg r {
-            printArrayWeird(toCharsArray("Rattlesnake", r))
-        }
+        val r = newreg;
+        printArrayWeird(toCharsArray("Rattlesnake", r))
     }
 
     fn toCharsArray(s: String, arrReg: Region^) -> arr^{arrReg} Char {

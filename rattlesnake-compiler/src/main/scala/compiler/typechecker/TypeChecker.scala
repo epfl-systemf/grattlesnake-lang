@@ -71,7 +71,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
         meTypeId = moduleName,
         meCaptureDescr = moduleSig.getNonSubstitutedCaptureDescr,
         currFunIdOpt = None,
-        insideRegionsScope = false,
+
         insideEnclosure = false,
         currentRestriction = CaptureSet.singletonOfRoot
       )
@@ -91,7 +91,6 @@ final class TypeChecker(errorReporter: ErrorReporter)
         meTypeId = structName,
         meCaptureDescr = structSig.getNonSubstitutedCaptureDescr,
         currFunIdOpt = None,
-        insideRegionsScope = false,
         insideEnclosure = false,
         currentRestriction = CaptureSet.singletonOfRoot
       )
@@ -128,7 +127,6 @@ final class TypeChecker(errorReporter: ErrorReporter)
           currFunIdOpt = None,
           meTypeId = placeholderMeId,
           meCaptureDescr = CaptureSet.empty,
-          insideRegionsScope = false,
           insideEnclosure = false,
           currentRestriction = CaptureSet.singletonOfRoot
         )
@@ -172,7 +170,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
       reportError("only packages can contain a main function", funDef.getPosition)
     }
     val tcCtx = TypeCheckingContext(analysisContext, meId, meCaptureDescr, Some(funName),
-      insideRegionsScope = false, insideEnclosure = false, currentRestriction = CaptureSet.singletonOfRoot)
+      insideEnclosure = false, currentRestriction = CaptureSet.singletonOfRoot)
     val bodyEnvir = Environment(globalCapSet)
     bodyEnvir.allow(MePath)
     for param <- params do {
@@ -473,8 +471,8 @@ final class TypeChecker(errorReporter: ErrorReporter)
       newCtx.writeLocalsRelatedWarnings(errorReporter)
 
     case retStat@ReturnStat(valueOpt) =>
-      if (!tcCtx.returnIsPermitted) {
-        reportError("return statements are not allowed inside region scopes and enclosures", retStat.getPosition)
+      if (tcCtx.insideEnclosure) {
+        reportError("return statements are not allowed inside enclosures", retStat.getPosition)
       }
       valueOpt.foreach { value =>
         val retType = checkExpr(value)
@@ -491,17 +489,6 @@ final class TypeChecker(errorReporter: ErrorReporter)
     case panicStat@PanicStat(msg) =>
       val msgType = checkExpr(msg)
       checkSubtypingConstraint(StringType, msgType, panicStat.getPosition, "panic")
-
-    case regStat@RegionsStat(declRegions, body) =>
-      featureIsNotAllowedIfOcapDisabled("regions", regStat.getPosition)
-      for regName <- declRegions do {
-        checkNoNameClashWithConstants(regName, regStat.getPosition)
-        tcCtx.addLocal(regName, RegionType ^ CaptureSet.singletonOfRoot, regStat.getPosition,
-          isReassignable = false, declHasTypeAnnot = false, duplicateVarCallback = { () =>
-            reportError(s"'$regName' is already defined in this scope", regStat.getPosition)
-          }, forbiddenTypeCallback = () => ())
-      }
-      checkStat(body)(using tcCtx.copyForRegionScope, envir.copyForSubScopeWith(declRegions), ambientLangMode)
 
     case restr@RestrictedStat(captureSetTree, body) =>
       featureIsNotAllowedIfOcapDisabled("restricted", restr.getPosition)
@@ -549,6 +536,10 @@ final class TypeChecker(errorReporter: ErrorReporter)
 
       case literal: Literal =>
         checkLiteralExpr(literal)
+
+      case regCreation@RegionCreation() =>
+        featureIsNotAllowedIfOcapDisabled("regions", regCreation.getPosition)
+        RegionType ^ CaptureSet.singletonOfRoot
 
       case varRef@VariableRef(name) =>
         tcCtx.localIsQueried(name)
@@ -856,7 +847,6 @@ final class TypeChecker(errorReporter: ErrorReporter)
       meTypeId = funOwnerSig.id,
       meCaptureDescr = funOwnerSig.getNonSubstitutedCaptureDescr,
       currFunIdOpt = Some(funSig.name),
-      insideRegionsScope = false,
       insideEnclosure = false,
       currentRestriction = CaptureSet.singletonOfRoot
     )
@@ -981,7 +971,6 @@ final class TypeChecker(errorReporter: ErrorReporter)
         meTypeId = structOrModuleSignature.id,
         meCaptureDescr = structOrModuleSignature.getNonSubstitutedCaptureDescr,
         currFunIdOpt = None,
-        insideRegionsScope = false,
         insideEnclosure = false,
         currentRestriction = CaptureSet.singletonOfRoot
       )

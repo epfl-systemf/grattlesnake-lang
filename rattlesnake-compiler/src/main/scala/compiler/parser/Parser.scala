@@ -277,7 +277,7 @@ final class Parser(errorReporter: ErrorReporter) extends CompilerStep[(List[Posi
   } setName "noBinopExpr"
 
   private lazy val binopArg = recursive {
-    (noBinopExpr OR arrayInit OR structOrModuleInstantiation)
+    (noBinopExpr OR arrayInit OR structOrModuleInstantiation OR regionCreation)
       ::: opt((kw(As) OR kw(Is)) ::: primOrNamedShape
     ) map {
       case expression ^: None => expression
@@ -344,15 +344,11 @@ final class Parser(errorReporter: ErrorReporter) extends CompilerStep[(List[Posi
     }
   } setName "structOrModuleInstantiation"
 
-  private lazy val regionsStat = recursive {
-    kw(WithReg).ignored ::: repeatWithSepNonZero(lowName, comma) ::: block map {
-      case regions ^: body => RegionsStat(regions, body)
-    }
-  } setName "regionsStat"
+  private lazy val regionCreation = kw(NewReg) map (_ => RegionCreation()) setName "regionCreation"
 
   private lazy val stat: P[Statement] = {
     exprOrAssig OR valDef OR varDef OR whileLoop OR forLoop OR ifThenElse OR
-      returnStat OR panicStat OR regionsStat OR restrictedStat OR enclosedStat
+      returnStat OR panicStat OR restrictedStat OR enclosedStat
   } setName "stat"
 
   private lazy val valDef = {
