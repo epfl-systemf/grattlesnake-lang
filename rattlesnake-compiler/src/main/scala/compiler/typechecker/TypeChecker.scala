@@ -146,12 +146,6 @@ final class TypeChecker(errorReporter: ErrorReporter)
     case _ => ()
   }
 
-  private def isFirstGenerationCapability(shape: TypeShape): Boolean = shape match {
-    case RegionType => true
-    case NamedTypeShape(id) => Device.devicesTypes.contains(id)
-    case _ => false
-  }
-
   private def checkFunction(
                              funDef: FunDef,
                              analysisContext: AnalysisContext,
@@ -215,7 +209,7 @@ final class TypeChecker(errorReporter: ErrorReporter)
       val tpe = checkType(paramType, idsAreFields = true)(using tcCtx, Environment.root, langMode)
       tcCtx.addLocal(paramName, tpe, modImp.getPosition, isReassignable = false, declHasTypeAnnot = true,
         duplicateVarCallback = { () =>
-          reportError(s"duplicated parameter: $paramName", modImp.getPosition)
+          reportError(s"duplicate parameter: $paramName", modImp.getPosition)
         },
         forbiddenTypeCallback = { () =>
           reportError(s"module $paramName has type $paramType, which is forbidden", modImp.getPosition)
