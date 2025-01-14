@@ -44,4 +44,5 @@ bin/
 .cache-main
 
 coverage/
+htmlReport/
 testout/
