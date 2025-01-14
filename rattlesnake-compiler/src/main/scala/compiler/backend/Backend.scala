@@ -2,7 +2,7 @@ package compiler.backend
 
 import compiler.analysisctx.AnalysisContext
 import compiler.backend.DescriptorsCreator.{descriptorForFunc, descriptorForType}
-import compiler.backend.TypesConverter.{convertToAsmTypeCode, internalNameOf, numSlotsFor, opcodeFor}
+import compiler.backend.TypesConverter.{convertToAsmType, convertToAsmTypeCode, internalNameOf, numSlotsFor, opcodeFor}
 import compiler.gennames.ClassesAndDirectoriesNames.{agentSubdirName, packageInstanceName}
 import compiler.gennames.{ClassesAndDirectoriesNames, FileExtensions}
 import compiler.irs.Asts.*
@@ -15,7 +15,7 @@ import lang.*
 import lang.CaptureDescriptors.CaptureSet
 import lang.Operator.*
 import lang.Types.PrimitiveTypeShape.*
-import lang.Types.{ArrayTypeShape, NamedTypeShape, PrimitiveTypeShape, UnionTypeShape}
+import lang.Types.{ArrayTypeShape, NamedTypeShape, PrimitiveTypeShape, TypeShape, UnionTypeShape}
 import org.objectweb.asm
 import org.objectweb.asm.*
 import org.objectweb.asm.Opcodes.*
@@ -517,6 +517,19 @@ final class Backend[V <: ClassVisitor](
         val elemType = indexed.getTypeShape.asInstanceOf[ArrayTypeShape].elemType
         val opcode = opcodeFor(elemType.shape, Opcodes.IALOAD, Opcodes.AALOAD)
         mv.visitInsn(opcode)
+        if (isObjectShape(elemType.shape)) {
+          // detect loading of null value from array
+          val afterCheckLabel = new Label()
+          mv.visitInsn(Opcodes.DUP)
+          mv.visitJumpInsn(Opcodes.IFNONNULL, afterCheckLabel)
+          mv.visitTypeInsn(NEW, "java/lang/RuntimeException")
+          mv.visitInsn(DUP)
+          mv.visitLdcInsn("array cell has not been initialized")
+          mv.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/RuntimeException",
+            ConstructorFunId.stringId, s"(L$stringTypeStr;)V", false)
+          mv.visitInsn(Opcodes.ATHROW)
+          mv.visitLabel(afterCheckLabel)
+        }
 
       case arrayInit@ArrayInit(regionOpt, elemTypeTree, size) =>
         val elemType = elemTypeTree.getResolvedType
@@ -873,6 +886,8 @@ final class Backend[V <: ClassVisitor](
       mv.visitIntInsn(Opcodes.ASTORE, varIdx)
     }
   }
+
+  private def isObjectShape(shape: TypeShape): Boolean = convertToAsmTypeCode(shape).isEmpty
 
   private def addSourceNameIfKnown(cv: ClassVisitor, posOpt: Option[Position]): Unit = {
     posOpt.foreach { pos =>
