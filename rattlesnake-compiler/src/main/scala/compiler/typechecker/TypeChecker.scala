@@ -604,6 +604,9 @@ final class TypeChecker(errorReporter: ErrorReporter)
         val types = arrayElems.map(checkExpr)
         computeJoinOf(types.toSet, tcCtx) match {
           case Some(elemsJoin) =>
+            if (elemsJoin.captureDescriptor.coversRoot){
+              reportError(s"inferred type $elemsJoin of array elements captures the root capability, which is forbidden", filledArrayInit.getPosition)
+            }
             ArrayTypeShape(elemsJoin) ^ regionOpt.map(minimalCaptureSetFor)
           case None =>
             reportError("cannot infer array type", filledArrayInit.getPosition)
