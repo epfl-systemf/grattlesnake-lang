@@ -2,9 +2,8 @@
 datatype MutList
 
 mut struct MutCons : MutList {
-    rg: Region^,
     var head: Int,
-    tail: MutList^{rg}
+    tail: MutList^{reg}
 }
 
 struct Nil : MutList
@@ -47,7 +46,7 @@ package Lists {
     fn mkList(rg: Region^, xs: arr^ Int) -> MutList^{rg} {
         var ls: MutList^{rg} = new Nil();
         for var i = len xs - 1; i >= 0; i -= 1 {
-            ls = new@rg MutCons(rg, xs[i], ls);
+            ls = new@rg MutCons(xs[i], ls);
         };
         return ls;
     }
