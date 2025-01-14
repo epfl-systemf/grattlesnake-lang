@@ -914,14 +914,14 @@ final class TypeChecker(errorReporter: ErrorReporter)
     }.union(regionOpt.map(minimalCaptureSetFor))
   }
 
-  private def detectSmartCasts(expr: Expr, ctx: TypeCheckingContext): Map[FunOrVarId, CastTargetTypeShape] = {
+  private def detectSmartCasts(expr: Expr, ctx: TypeCheckingContext): Map[FunOrVarId, Type] = {
     expr match {
       case BinaryOp(lhs, Operator.And, rhs) =>
         // concat order is reversed because we want to keep the leftmost type test in case of conflict
         detectSmartCasts(rhs, ctx) ++ detectSmartCasts(lhs, ctx)
-      case TypeTest(VariableRef(varName), typeTree) if ctx.getLocalOnly(varName).exists(!_.isReassignable) =>
+      case TypeTest(varRef@VariableRef(varName), typeTree) if ctx.getLocalOnly(varName).exists(!_.isReassignable) =>
         typeTree.getResolvedTypeOpt.map { tpe =>
-          Map(varName -> tpe)
+          Map(varName -> (tpe ^ varRef.getType.captureDescriptor))
         }.getOrElse(Map.empty)
       case _ => Map.empty
     }

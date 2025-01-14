@@ -605,17 +605,17 @@ object Asts {
   }
 
   trait SmartCastsAware extends Ast {
-    private var smartCasts: Map[FunOrVarId, CastTargetTypeShape] = Map.empty
+    private var smartCasts: Map[FunOrVarId, Type] = Map.empty
 
     def cond: Expr
 
     def thenBr: Statement
 
-    def setSmartCasts(smartcasts: Map[FunOrVarId, CastTargetTypeShape]): Unit = {
+    def setSmartCasts(smartcasts: Map[FunOrVarId, Type]): Unit = {
       this.smartCasts = smartcasts
     }
 
-    def getSmartCasts: Map[FunOrVarId, CastTargetTypeShape] = smartCasts
+    def getSmartCasts: Map[FunOrVarId, Type] = smartCasts
   }
 
   trait Conditional extends SmartCastsAware {

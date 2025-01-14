@@ -863,13 +863,13 @@ final class Backend[V <: ClassVisitor](
     mv.visitLabel(endLabel)
   }
 
-  private def generateSmartCasts(smartCasts: Map[FunOrVarId, Types.TypeShape], ctx: CodeGenerationContext)
+  private def generateSmartCasts(smartCasts: Map[FunOrVarId, Types.Type], ctx: CodeGenerationContext)
                                 (using mv: MethodVisitor): Unit = {
     for (varId, destType) <- smartCasts do {
       // typechecker has already checked that varId is not a constant
       val (originType, varIdx) = ctx.getLocal(varId).get
       mv.visitIntInsn(Opcodes.ALOAD, varIdx)
-      mv.visitTypeInsn(Opcodes.CHECKCAST, internalNameOf(destType)(using ctx.analysisContext))
+      mv.visitTypeInsn(Opcodes.CHECKCAST, internalNameOf(destType.shape)(using ctx.analysisContext))
       mv.visitIntInsn(Opcodes.ASTORE, varIdx)
     }
   }

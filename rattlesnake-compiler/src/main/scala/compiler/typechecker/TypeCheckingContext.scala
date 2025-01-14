@@ -36,7 +36,7 @@ final case class TypeCheckingContext private(
 
   def copyForSubScope: TypeCheckingContext = copy(locals = mutable.Map.from(locals))
 
-  def copyWithSmartCasts(smartCasts: Map[FunOrVarId, TypeShape]): TypeCheckingContext = {
+  def copyWithSmartCasts(smartCasts: Map[FunOrVarId, Type]): TypeCheckingContext = {
     copy(locals = locals.map {
       case (id, info) => id -> info.copy(tpe = smartCasts.getOrElse(id, info.tpe))
     })
