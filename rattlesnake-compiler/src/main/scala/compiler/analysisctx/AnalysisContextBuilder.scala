@@ -319,7 +319,7 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
     ).foreach { cycle =>
       val posOpt = packages.get(cycle.head).flatMap(_._2)
       reportError("ocap packages do not compose in an ocap-compliant manner: cyclic dependency found that involves " +
-        "the following packages: " + cycle.mkString(", "), posOpt)
+        "the following packages: " + cycle.init.mkString(", "), posOpt)
     }
   }
 
@@ -328,7 +328,7 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
       tid => builtStructMap.get(tid).toList.flatMap(_.directSupertypes).sortBy(_.stringId)
     ).foreach { cycle =>
       val posOpt = structs.get(cycle.head).flatMap(_._2)
-      reportError("cycle found in datastruct subtyping: " + cycle.mkString(" <: ") + " <: " + cycle.head, posOpt)
+      reportError("cycle found in datastruct subtyping: " + cycle.mkString(" <: "), posOpt)
     }
   }
 
@@ -340,8 +340,10 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
     var found = false
 
     def exploreFrom(v: V): Unit = {
-      found |= inStack(v)
-      if (!found && !alreadyFound(v)){
+      if (!found && inStack(v)){
+        found = true
+        cycleStack.push(v)
+      } else if (!found && !alreadyFound(v)){
         alreadyFound.add(v)
         cycleStack.push(v)
         inStack.add(v)
@@ -360,7 +362,11 @@ final class AnalysisContextBuilder(errorReporter: ErrorReporter) {
       val root = iter.next()
       exploreFrom(root)
     }
-    if found then Some(cycleStack.toSeq.reverse) else None
+    if (found){
+      val origin = cycleStack.head
+      val reversedBackPathFromOrigin = origin :: cycleStack.tail.takeWhile(_ != origin).toList
+      Some(origin :: reversedBackPathFromOrigin.reverse)
+    } else None
   }
 
 }
