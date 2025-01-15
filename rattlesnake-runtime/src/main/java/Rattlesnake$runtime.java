@@ -76,14 +76,20 @@ public final class Rattlesnake$runtime {
         }
     }
 
+    /**
+     * This method assumes that currentEnvir is not null
+     */
     private static void assertRegionOfIdIsAllowed(int regionId) {
-        if (currentEnvir != null && !currentEnvir.regions.contains(regionId)) {
+        if (!currentEnvir.regions.contains(regionId)) {
             throw new Rattlesnake$IllegalCapabilityUseError(
                     "illegal modification of a region in a dynamically restricted environment");
         }
     }
 
     public static void assertRegionAllowed(Object obj) {
+        if (currentEnvir == null){
+            return;
+        }
         var region = objToRegion.get(obj);
         if (region != null) {
             assertRegionOfIdIsAllowed(region);
