@@ -661,6 +661,9 @@ final class TypeChecker(errorReporter: ErrorReporter)
           }
         } else if (operator == Sharp) {
           featureIsNotAllowedIfOcapDisabled("marking operator", unaryOp.getPosition)
+          if (ambientLangMode.isOcapEnabled && !tcCtx.insideEnclosure) {
+            reportError("marking operator is only allowed inside enclosures", unaryOp.getPosition)
+          }
           operandTypeShape ^ Mark
         } else {
           unaryOperatorSignatureFor(operator, operandTypeShape) match {
