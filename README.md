@@ -35,7 +35,7 @@ The following dependencies are required to build the system:
 Python 3 is required to run the main build script, which makes things substantially easier. Python 3.12.0 has been used during development.
 You may also want to run the local Makefile scripts, in which case you will need to have make installed on your machine. Installation instructions: [Ubuntu](https://linuxhint.com/install-make-ubuntu/), [Windows](https://www.technewstoday.com/install-and-use-make-in-windows/)
 
-To build the compiler, runtime, and agent at once, go to the [mkjars directory](./mkjars-script) and run `python mkjars.py`. If you want to skip compilation of the compiler (which takes a bit of time), run `python mkjars.py skip-compiler`. This script creates a new directory named `jars` and writes the jars corresponding to the runtime, agent, and compiler (if not skipped) in it.
+To build the compiler, runtime, and agent at once, go to the [mkjars directory](./mkjars-script) and run `python mk_jars.py`. If you want to skip compilation of the compiler (which takes a bit of time), run `python mk_jars.py skip-compiler`. This script creates a new directory named `jars` and writes the jars corresponding to the runtime, agent, and compiler (if not skipped) in it.
 
 
 ## Compiling and running Grattlesnake programs
