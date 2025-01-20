@@ -1,7 +1,9 @@
 
-## The Rattlesnake programming language, Gradient version
+## The Grattlesnake programming language
 
-This branch contains an experimental implementation of the Gradient type system (Boruch-Gruszecki et al., 2024) inside the Rattlesnake language.
+For the original version of the Rattlesnake language, see the `rattlesnake-v0.1` branch.
+
+This branch contains an experimental implementation of the Gradient type system (Boruch-Gruszecki et al., 2024) inside the Rattlesnake language (hence the Grattlesnake name! 🐍).
 
 This work is part of my Master's thesis (EPFL SYSTEMF lab, fall semester 2024-2025).
 
@@ -13,7 +15,7 @@ An example program (a sudoku solver) can be found at https://github.com/Valentin
 
 ## Repository structure
 
-This repositories contains folders that correspond to the three main modules of the Grattlesnake language:
+This repository contains folders that correspond to the three main modules of the Grattlesnake language:
 - [The compiler](./rattlesnake-compiler): compiles Grattlesnake programs to Java bytecode.
 - [The runtime](./rattlesnake-runtime): classes that get injected in Grattlesnake program. Responsible for devices, environments, and runtime checks.
 - [The agent](./rattlesnake-agent): a Java agent that collaborates with the runtime classes to perform runtime checks on object mutations.
@@ -33,10 +35,10 @@ The following dependencies are required to build the system:
 Python 3 is required to run the main build script, which makes things substantially easier. Python 3.12.0 has been used during development.
 You may also want to run the local Makefile scripts, in which case you will need to have make installed on your machine. Installation instructions: [Ubuntu](https://linuxhint.com/install-make-ubuntu/), [Windows](https://www.technewstoday.com/install-and-use-make-in-windows/)
 
-To build the compiler, runtime, and agent at once, go to the [mkjars script](./mkjars-script) and run `python mkjars.py`. If you want to skip compilation of the compiler (which takes a bit of time), run `python mkjars.py skip-compiler`. This script creates a new directory named `jars` and writes the jars corresponding to the compiler, runtime, and agent in it.
+To build the compiler, runtime, and agent at once, go to the [mkjars directory](./mkjars-script) and run `python mkjars.py`. If you want to skip compilation of the compiler (which takes a bit of time), run `python mkjars.py skip-compiler`. This script creates a new directory named `jars` and writes the jars corresponding to the runtime, agent, and compiler (if not skipped) in it.
 
 
-## Compiling and running Grattlsnake programs
+## Compiling and running Grattlesnake programs
 
 1. Copy the jars (compiler, runtime, and agent, which can be found in the `jars` directory) into your project root folder.
 2. Create a `src` directory in your project root folder. Write your code in files with the `.rsn` extension, inside this directory (subdirectories are not supported).
