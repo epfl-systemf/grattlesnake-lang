@@ -3,9 +3,10 @@
 ## Compiler stages
 
 1. Frontend (lexer + parser): runs separately on each source file and creates the AST
-2. Context creator: creates an `AnalysisContext` that contains all the signatures of all the functions, constants, types 
-   and tests of the program
-3. Type checker: performs type checking and writes the types of each expression into the AST
-4. Lowerer: transforms the AST to reduce the number of different constructs that the backend will have to handle
-5. Tail checker: checks that tail calls are indeed in tail position
-6. Backend: emits the bytecode
+2. Imports scanner: fetches the packages and devices imported by each module definition
+3. Context creator: creates an `AnalysisContext` that contains all the signatures of all the types and functions in the program
+4. Type checker: performs type checking and writes the types of each expression into the AST
+5. Control-flow analyzer: checks that non-Void functions always end with a `return` or `panic` and that locals are initialized before being read
+6. Lowerer: transforms the AST to reduce the number of different constructs that the backend will have to handle
+7. Tail recursions checker: checks that calls marked for elimination are in tail position
+8. Backend: emits the bytecode
