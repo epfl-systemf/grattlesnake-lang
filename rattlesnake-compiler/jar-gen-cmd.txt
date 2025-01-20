@@ -1,3 +1,0 @@
-
-Command to generate the jar:
-sbt assembly

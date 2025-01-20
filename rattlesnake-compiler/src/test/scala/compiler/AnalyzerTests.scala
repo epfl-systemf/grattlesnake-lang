@@ -15,18 +15,7 @@ import java.nio.file.{Files, Paths}
 import scala.collection.mutable
 import scala.runtime.BooleanRef
 
-/**
- * Expected errors should be specified in formalized comments, starting with `//>`.
- * The comment should contain a code for the error level (E for error, W for warning), and the expected message, e.g.:
- * {{{ //> W : unused local: 'x' is never queried }}}
- * The error is expected to be reported at the line where the comment specifying it is positioned:
- * {{{ //> E@col=41 : expected 'S', found 'I' }}}
- * The error level code can be postfixed with `@col=` and the column index if you want to assert the column position as well.
- * By default, the system expected all errors to be specified. It is also possible to ignore unspecified errors
- * (and thus only assert that the specified ones are reported). To do so, use the following command at the beginning
- * of the file:
- * {{{ //> "allow-more-errors" }}}
- */
+
 object AnalyzerTests {
 
   private val rootPathStr: String = "./src/test/res/analyzer-tests/"
