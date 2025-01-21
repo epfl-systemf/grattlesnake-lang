@@ -13,6 +13,11 @@ This work is part of my Master's thesis (EPFL SYSTEMF lab, fall semester 2024-20
 An example program (a sudoku solver) can be found at https://github.com/ValentinAebi/sudoku-case-study.
 
 
+## Language documentation
+
+A [language documentation](./grattlesnake-lang-doc.md) is available in a separate document.
+
+
 ## Repository structure
 
 This repository contains folders that correspond to the three main modules of the Grattlesnake language:
@@ -47,6 +52,11 @@ To build the compiler, runtime, and agent at once, go to the [mkjars directory](
 You may want to refer to the example project mentioned above (the commands can be found in the Makefile of this project).
 
 The compiler offers other commands. Just run `java -jar rattlesnake-compiler-0.2.0-snapshot.jar help` for a list of supported commands. Note that some of these commands may not be very stable.
+
+
+## Todo list
+
+A [list of improvement directions](./improvement-directions.md) is available in a separate document.
 
 
 ## Library references
