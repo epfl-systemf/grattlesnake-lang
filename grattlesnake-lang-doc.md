@@ -3,7 +3,7 @@
 
 ## Language modes
 
-Code must obey the ocap discipline by default (ocap mode). A file can be declared non-ocap by putting `#nocap;` at the very beginning of if, before any declaration (non-ocap mode).
+Code must obey the ocap discipline by default (ocap mode). A file can be declared non-ocap by putting `#nocap;` at the very beginning of the file, before any declaration (non-ocap mode).
 
 
 ## Resources and graduality
@@ -30,12 +30,12 @@ Note that `String` is treated like a primitive type. In particular, strings are 
 
 `Nothing` can be used as the return type of functions that can not return (note that the compiler is conservative and in complex cases it may not be able to prove that a function indeed never returns).
 
-Arrays are supported and have the following syntax: `arr <element type>`, e.g. `arr Int` or `arr arr String`. They are mutable and invariant. Arrays of primitive types other than `String` are initialized with null values. Other arrays must be initialized explicitly: loading from an uninitialized array cell results in a runtime error.
+Arrays are supported and have the following syntax: `arr <element type>`, e.g. `arr Int` or `arr arr String`. They are mutable and invariant. Arrays of primitive types other than `String` are initialized with 0s (or false for booleans). Other arrays must be initialized explicitly: loading from an uninitialized array cell results in a runtime error.
 
 
 ## Supported devices
 
-Grattlesnake offers two devices: the filesystem (referred to as `fs`) and the console (referred to as `console`). See the [filesystem API](./rattlesnake-compiler/src/main/scala/lang/FileSystemApi.scala) and the [console API](./rattlesnake-compiler/src/main/scala/lang/ConsoleApi.scala) for the list of functions they give access to. They have to be imported explicitly in modules. In packages, merely using them imports them automatically and adds them to the capture set of the module.
+Grattlesnake offers two devices: the filesystem (referred to as `fs`) and the console (referred to as `console`). See the [filesystem API](./rattlesnake-compiler/src/main/scala/lang/FileSystemApi.scala) and the [console API](./rattlesnake-compiler/src/main/scala/lang/ConsoleApi.scala) for the list of functions they give access to. They have to be imported explicitly in modules. In packages, merely using them imports them automatically and adds them to the capture set of the package.
 
 
 ## Declaring a type
@@ -63,7 +63,7 @@ A mutable struct may subtype an immutable datatype. But in any case, a field tha
 
 Final (i.e. non reassignable) fields are covariant (they may have a more restrictive type in the subtype). Reassignable fields are invariant.
 
-Datatypes may subtype each other, following the same rules as subtyping between a struct and a datatype.
+Datatypes may subtype other datatypes, following the same rules as subtyping between a struct and a datatype.
 
 
 ### Constants
@@ -77,7 +77,7 @@ Functions can be declared in the body of modules and packages: `fn foo(x: Int, .
 
 Two modifiers are supported (they must precede `fn`): `private`, which allows only functions in the current module or package to refer to the private function), and `main` to mark a function that is an entry point of the program. A main function must take a single argument of type `arr String` and return `Void`. Only packages can define a (single) main function.
 
-`Void` return type may be omitted: `fn foo()` defines a `Void` function.
+`Void` return type may be omitted: `fn foo()` declares a `Void` function.
 
 Arguments may be reassignable (`fn foo(var x: Int)`) or unnamed: `main fn run(arr String)`.
 
@@ -125,7 +125,7 @@ Length operator: `len` on arrays and strings
 
 Comparison operators `<`, `<=`, `>`, `>=`, are supported on integers and doubles. `==`, `!=` are supported on any type (structures and modules are checked for equality _by reference_).
 
-`&&`, `||` are supported on doubles.
+`&&`, `||` are supported on booleans.
 
 
 ### Ternary operator
@@ -159,7 +159,7 @@ Type tests: `val b: Bool = x is Foo`
 
 If: `if cond { ... } else { ... }`
 
-The else branch is optional. `else if` are supported.
+The else branch is optional. `else if` clauses are supported.
 
 `if` can be used for pattern matching on datatypes:
 
@@ -207,12 +207,12 @@ The `return` statement allows to return a value: `return x`. It may also be used
 
 ### Restricted blocks
 
-`restricted {fs, r} { <body statements> }` statically asserts that no capability other than the explicitly allowed ones defined outside of the block (here `fs` and `r`) are accessed from inside it.
+`restricted {fs, r} { <body statements> }` statically asserts that no capability defined outside of the block except the ones explicitly allowed by the capture set (here `fs` and `r`) is accessed from inside it.
 
 
 ### Enclosures
 
-Enclosures are the dynamic counterpart of `restricted`. They use the exact same syntax as restricted blocks (except that `restricted` is replaced by `enclosed`) and crash the program if code executed in their body tries to access a capability other than the ones mentioned. Note that because of restrictions on runtime checks, only regions and devices may be included in the capture set given to an enclosure.
+Enclosures are the dynamic counterpart of `restricted`. They use the exact same syntax as restricted blocks (except that `restricted` is replaced by `enclosed`) and crash the program if code executed in their body tries to access a capability other than the ones mentioned in the capture set. Note that because of restrictions on runtime checks, only regions and devices may be included in the capture set given to an enclosure.
 
 ```
 enclosed {fs} {
