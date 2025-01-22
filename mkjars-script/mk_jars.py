@@ -39,7 +39,7 @@ def delete(jar_name: str):
     shutil.rmtree(dst_dir + "/" + jar_name, ignore_errors=True)
 
 
-def include_compiler() -> bool:
+def includes_compiler() -> bool:
     if len(sys.argv) < 2:
         return True
     elif sys.argv[1] == "skip-compiler":
@@ -50,29 +50,27 @@ def include_compiler() -> bool:
 
 if __name__ == "__main__":
 
-    incl_compiler = include_compiler()
-
-    if incl_compiler:
-        assemble(compiler_dir)
+    incl_compiler = includes_compiler()
 
     package(runtime_dir)
     package(agent_dir)
 
-    if incl_compiler:
-        delete(compiler_final_jar_name)
     delete(runtime_final_jar_name)
     delete(agent_final_jar_name)
 
     if not os.path.exists(dst_dir):
         os.mkdir(dst_dir)
 
-    if incl_compiler:
-        copyJar(compiler_dir + "/target/" + compiler_scala_version,
-                lambda f: f.startswith("Rattlesnake-assembly"),
-                compiler_final_jar_name)
     copyJar(runtime_dir + "/target/",
             lambda f: f.endswith("with-dependencies.jar"),
             runtime_final_jar_name)
     copyJar(agent_dir + "/target/",
             lambda f: f.endswith("with-dependencies.jar"),
             agent_final_jar_name)
+
+    if incl_compiler:
+        delete(compiler_final_jar_name)
+        assemble(compiler_dir)
+        copyJar(compiler_dir + "/target/" + compiler_scala_version,
+                lambda f: f.startswith("Rattlesnake-assembly"),
+                compiler_final_jar_name)
