@@ -51,7 +51,8 @@ final class TailrecChecker(errorReporter: ErrorReporter)
         check(body, isTailPosition)
       case EnclosedStat(captureSet, body) =>
         check(captureSet, false)
-        check(body, isTailPosition)
+        // body is never in tail position as envir-related instructions execute at the end of the enclosure
+        check(body, false)
       case _ =>
         ast.children.foreach(check(_, false))
     }
